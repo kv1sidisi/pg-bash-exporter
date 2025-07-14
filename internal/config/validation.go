@@ -25,10 +25,14 @@ func (c *Config) Validate() error {
 		allErrors = append(allErrors, globalErrors...)
 	}
 
-	for _, metric := range c.Metrics {
-		if metricErrors := metric.validate(); len(metricErrors) > 0 {
-			for _, err := range metricErrors {
-				allErrors = append(allErrors, fmt.Sprintf("metric '%s': %s", metric.Name, err))
+	if len(c.Metrics) == 0 {
+		allErrors = append(allErrors, "at least one metric must be defined")
+	} else {
+		for _, metric := range c.Metrics {
+			if metricErrors := metric.validate(); len(metricErrors) > 0 {
+				for _, err := range metricErrors {
+					allErrors = append(allErrors, fmt.Sprintf("metric '%s': %s", metric.Name, err))
+				}
 			}
 		}
 	}
