@@ -1,0 +1,135 @@
+server:
+  listen_address: "0.0.0.0:8080"
+  metrics_path: "/metrics"
+
+logging:
+  level: "info" #info/debug/production
+  path: "exporter_logs.log"
+
+global:
+  timeout: "30s"
+  cache_ttl: "5m"
+  max_concurrent: 10
+  command_blacklist:
+    - "rm"
+    - "shutdown"
+    - "reboot"
+
+metrics:
+  - name: "system_load"
+    help: "System load average"
+    type: "gauge"
+    command: "cat /proc/loadavg"
+    cache_ttl: "1m"
+    sub_metrics:
+      - name: "load_1m"
+        help: "1 minute load average"
+        type: "gauge"
+        field: 0
+      - name: "load_5m"
+        help: "5 minute load average"
+        type: "gauge"
+        field: 1
+      - name: "load_15m"
+        help: "15 minute load average"
+        type: "gauge"
+        field: 2
+
+  - name: "memory_usage"
+    help: "Memory usage statistics"
+    type: "gauge"
+    command: "free -b"
+    cache_ttl: "30s"
+    sub_metrics:
+      - name: "memory_total"
+        help: "Total memory in bytes"
+        type: "gauge"
+        field: 1
+      - name: "memory_used"
+        help: "Used memory in bytes"
+        type: "gauge"
+        field: 2
+      - name: "memory_free"
+        help: "Free memory in bytes"
+        type: "gauge"
+        field: 3
+
+  - name: "disk_usage"
+    help: "Disk usage by mountpoint"
+    type: "gauge"
+    command: "df -B1 | tail -n +2"
+    cache_ttl: "2m"
+    sub_metrics:
+      - name: "disk_total_bytes"
+        help: "Total disk space in bytes"
+        type: "gauge"
+        field: 1
+        dynamic_labels:
+          - name: "mountpoint"
+            field: 5
+          - name: "filesystem"
+            field: 0
+      - name: "disk_used_bytes"
+        help: "Used disk space in bytes"
+        type: "gauge"
+        field: 2
+        dynamic_labels:
+          - name: "mountpoint"
+            field: 5
+          - name: "filesystem"
+            field: 0
+
+  - name: "system_uptime"
+    help: "System uptime in seconds"
+    type: "counter"
+    command: "cat /proc/uptime"
+    cache_ttl: "10s"
+    sub_metrics:
+      - name: "uptime_seconds"
+        help: "System uptime in seconds"
+        type: "counter"
+        field: 0
+
+  - name: "process_count"
+    help: "Number of running processes"
+    type: "gauge"
+    command: "ps aux | wc -l"
+    timeout: "5s"
+    cache_ttl: "15s"
+
+  - name: "custom_service_status"
+    help: "Status of custom services"
+    type: "gauge"
+    command: "systemctl is-active nginx"
+    labels:
+      service: "nginx"
+      environment: "production"
+    cache_ttl: "30s"
+
+  - name: "network_connections"
+    help: "Number of network connections by state"
+    type: "gauge"
+    command: "netstat -an | grep -E '^tcp' | awk '{print $6}' | sort | uniq -c"
+    timeout: "10s"
+    cache_ttl: "1m"
+    resource_intensive: true
+    sub_metrics:
+      - name: "connections_by_state"
+        help: "Network connections count by state"
+        type: "gauge"
+        field: 0
+        dynamic_labels:
+          - name: "state"
+            field: 1
+
+  - name: "emergency_disk_cleanup"
+    help: "Emergency disk cleanup status"
+    type: "gauge"
+    command: "find /tmp -type f -mtime +7 | wc -l"
+    ignore_blacklist: true
+    resource_intensive: true
+    timeout: "60s"
+    cache_ttl: "10m"
+    labels:
+      critical: "true"
+      path: "/tmp"
