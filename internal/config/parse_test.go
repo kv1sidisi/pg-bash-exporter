@@ -17,7 +17,11 @@ server:
 	if err != nil {
 		t.Fatal("couldnt make temp file")
 	}
-	defer os.Remove(f.Name()) // clean up
+	defer func() {
+		if err := os.Remove(f.Name()); err != nil {
+			t.Logf("failed to remove temp file %s: %v", f.Name(), err)
+		}
+	}() // clean up
 
 	if _, err := f.Write([]byte(good_yaml)); err != nil {
 		t.Fatal("couldnt write to temp file")
@@ -53,7 +57,11 @@ func TestLoadBadYAML(t *testing.T) {
 	if err != nil {
 		t.Fatal("couldnt make temp file")
 	}
-	defer os.Remove(f.Name())
+	defer func() {
+		if err := os.Remove(f.Name()); err != nil {
+			t.Logf("failed to remove temp file %s: %v", f.Name(), err)
+		}
+	}()
 
 	if _, err := f.Write([]byte(bad_yaml)); err != nil {
 		t.Fatal("couldnt write to temp file")
