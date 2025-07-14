@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
+	"log/slog"
 	"os"
 	"pg-bash-exporter/internal/config"
 )
@@ -39,5 +41,43 @@ func main() {
 		log.Fatalf("failed to load configuration: %v", err)
 	}
 
-	fmt.Printf("scdsc")
+	setupLogger(cfg.Logging)
+
+	slog.Info("Starting pg-bash-exporter",
+		"listen_address", cfg.Server.ListenAddress,
+		"metrics_path", cfg.Server.MetricsPath,
+	)
+}
+
+func setupLogger(cfg config.Logging) {
+	var logOutput io.Writer
+
+	if cfg.Path == "" {
+		logOutput = os.Stdout
+	} else {
+		file, err := os.OpenFile(cfg.Path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0664)
+		if err != nil {
+			log.Fatalf("failed to open log file: %v", err)
+		}
+		logOutput = file
+	}
+
+	var logLevel slog.Level
+
+	switch cfg.Level {
+	case "debug":
+		logLevel = slog.LevelDebug
+	case "info":
+		logLevel = slog.LevelInfo
+	case "error":
+		logLevel = slog.LevelError
+	default:
+		logLevel = slog.LevelInfo
+	}
+
+	handler := slog.NewJSONHandler(logOutput, &slog.HandlerOptions{Level: logLevel})
+
+	logger := slog.New(handler)
+
+	slog.SetDefault(logger)
 }

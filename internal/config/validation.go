@@ -6,7 +6,14 @@ import (
 	"strings"
 )
 
-var metricRegex = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+var (
+	metricRegex = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+
+	validTypes = map[string]bool{
+		"gauge":   true,
+		"counter": true,
+	}
+)
 
 // Validate checks config for correctness.
 // returns all validation errors
@@ -64,10 +71,9 @@ func (l *Logging) validate() []string {
 	var errs []string
 
 	validLevels := map[string]bool{
-		"info":       true,
-		"debug":      true,
-		"production": true,
-		"error":      true,
+		"info":  true,
+		"debug": true,
+		"error": true,
 	}
 
 	if !validLevels[l.Level] {
@@ -105,13 +111,8 @@ func (m *Metric) validate() []string {
 		errs = append(errs, "help string is required")
 	}
 
-	validTypes := map[string]bool{
-		"gauge": true,
-		"count": true,
-	}
-
 	if !validTypes[m.Type] {
-		errs = append(errs, "type is invalid. valid: gauge, count")
+		errs = append(errs, "type is invalid. valid: gauge, counter")
 	}
 
 	if m.Command == "" {
@@ -142,11 +143,6 @@ func (sm *SubMetric) validate() []string {
 
 	if sm.Help == "" {
 		errs = append(errs, "help string is required")
-	}
-
-	validTypes := map[string]bool{
-		"gauge": true,
-		"count": true,
 	}
 
 	if !validTypes[sm.Type] {
