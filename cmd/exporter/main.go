@@ -36,7 +36,7 @@ func main() {
 	var cfg config.Config
 
 	if err := config.Load(configPath, &cfg); err != nil {
-		log.Fatal("failed to load configuration: %v", err)
+		log.Fatalf("failed to load configuration: %v", err)
 	}
 
 	fmt.Printf("scdsc")
