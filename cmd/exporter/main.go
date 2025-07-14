@@ -3,10 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
+	"pg-bash-exporter/internal/collector"
 	"pg-bash-exporter/internal/config"
 )
 
@@ -43,10 +47,27 @@ func main() {
 
 	setupLogger(cfg.Logging)
 
-	slog.Info("Starting pg-bash-exporter",
+	slog.Info("Configuration loaded and logger initialized successfully")
+
+	collector := collector.NewCollector(&cfg, slog.Default())
+
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(collector)
+	metricsHandler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
+
+	http.Handle("/metrics", metricsHandler)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`<html><head><title>PG Bash Exporter</title></head><body>PG Bash Exporter<p><a href="/metrics">Metrics</a></p></body></html>`))
+	})
+
+	slog.Info("Starting pg-bash-exporter server",
 		"listen_address", cfg.Server.ListenAddress,
 		"metrics_path", cfg.Server.MetricsPath,
 	)
+	if err := http.ListenAndServe(cfg.Server.ListenAddress, nil); err != nil {
+		slog.Error("Failed to start server", "error", err)
+		os.Exit(1)
+	}
 }
 
 func setupLogger(cfg config.Logging) {
