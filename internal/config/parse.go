@@ -44,5 +44,10 @@ func Load(path string, cfg *Config) error {
 		return fmt.Errorf("failed to parse YAML from file %s: %w", path, err)
 	}
 
+	err = cfg.Validate()
+	if err != nil {
+		return fmt.Errorf("configuration is invalid: %s", err)
+	}
+
 	return nil
 }
