@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"pg-bash-exporter/internal/config"
 )
 
@@ -14,7 +15,7 @@ func main() {
 	var cfg config.Config
 
 	if err := config.Load(configPath, &cfg); err != nil {
-		fmt.Printf("failed to load configuration: %v", err)
+		log.Fatal("failed to load configuration: %v", err)
 	}
 
 	fmt.Printf("scdsc")
