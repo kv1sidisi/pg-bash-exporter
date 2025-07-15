@@ -91,12 +91,12 @@ simple_metric 123
 				err:    nil,
 			},
 			expectedMetric: `
-# HELP sub_one First sub-metric.
-# TYPE sub_one gauge
-sub_one 10
-# HELP sub_two Second sub-metric.
-# TYPE sub_two gauge
-sub_two 20
+# HELP sub_metric_sub_one First sub-metric.
+# TYPE sub_metric_sub_one gauge
+sub_metric_sub_one 10
+# HELP sub_metric_sub_two Second sub-metric.
+# TYPE sub_metric_sub_two gauge
+sub_metric_sub_two 20
 `,
 		},
 		{
@@ -152,10 +152,10 @@ sub_two 20
 				err:    nil,
 			},
 			expectedMetric: `
-# HELP dynamic_sub_metric A sub-metric with dynamic labels.
-# TYPE dynamic_sub_metric gauge
-dynamic_sub_metric{my_label="label_val1"} 10
-dynamic_sub_metric{my_label="label_val2"} 20
+# HELP dynamic_labels_metric_dynamic_sub_metric A sub-metric with dynamic labels.
+# TYPE dynamic_labels_metric_dynamic_sub_metric gauge
+dynamic_labels_metric_dynamic_sub_metric{my_label="label_val1"} 10
+dynamic_labels_metric_dynamic_sub_metric{my_label="label_val2"} 20
 `,
 		},
 		{
@@ -352,21 +352,33 @@ func TestGetLabelValues(t *testing.T) {
 
 func TestToPrometheusValueType(t *testing.T) {
 	testCases := []struct {
-		name       string
-		metricType string
-		expected   prometheus.ValueType
+		name         string
+		metricType   string
+		expectedType prometheus.ValueType
+		wantErr      bool
 	}{
-		{"gauge", "gauge", prometheus.GaugeValue},
-		{"counter", "counter", prometheus.CounterValue},
-		{"invalid type", "invalid", 0},
-		{"empty type", "", 0},
+		{"gauge", "gauge", prometheus.GaugeValue, false},
+		{"counter", "counter", prometheus.CounterValue, false},
+		{"invalid type", "invalid", 0, true},
+		{"empty type", "", 0, true},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			valueType := toPrometheusValueType(tc.metricType)
-			if valueType != tc.expected {
-				t.Errorf("expected %v, but got %v", tc.expected, valueType)
+			valueType, err := toPrometheusValueType(tc.metricType)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Errorf("expected an error, but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("did not expect an error, but got: %v", err)
+				}
+			}
+
+			if valueType != tc.expectedType {
+				t.Errorf("expected type %v, but got %v", tc.expectedType, valueType)
 			}
 		})
 	}
