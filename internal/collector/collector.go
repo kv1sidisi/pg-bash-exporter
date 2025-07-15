@@ -141,7 +141,7 @@ func toPrometheusValueType(metricType string) (prometheus.ValueType, error) {
 	case "counter":
 		return prometheus.CounterValue, nil
 	default:
-		return 0, fmt.Errorf("unsupported metric type %s", metricType)
+		return 0, fmt.Errorf("unsupported metric type: %s", metricType)
 	}
 }
 

@@ -352,24 +352,33 @@ func TestGetLabelValues(t *testing.T) {
 
 func TestToPrometheusValueType(t *testing.T) {
 	testCases := []struct {
-		name       string
-		metricType string
-		expected   prometheus.ValueType
+		name         string
+		metricType   string
+		expectedType prometheus.ValueType
+		wantErr      bool
 	}{
-		{"gauge", "gauge", prometheus.GaugeValue},
-		{"counter", "counter", prometheus.CounterValue},
-		{"invalid type", "invalid", 0},
-		{"empty type", "", 0},
+		{"gauge", "gauge", prometheus.GaugeValue, false},
+		{"counter", "counter", prometheus.CounterValue, false},
+		{"invalid type", "invalid", 0, true},
+		{"empty type", "", 0, true},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			valueType, err := toPrometheusValueType(tc.metricType)
-			if err != nil {
-				t.Errorf("expected %v, but got error: %v", tc.expected, err)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Errorf("expected an error, but got nil")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("did not expect an error, but got: %v", err)
+				}
 			}
-			if valueType != tc.expected {
-				t.Errorf("expected %v, but got %v", tc.expected, valueType)
+
+			if valueType != tc.expectedType {
+				t.Errorf("expected type %v, but got %v", tc.expectedType, valueType)
 			}
 		})
 	}
