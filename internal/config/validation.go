@@ -1,9 +1,9 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
-	"strings"
 )
 
 var (
@@ -18,58 +18,50 @@ var (
 // Validate checks config for correctness.
 // returns all validation errors
 func (c *Config) Validate() error {
-	var allErrors []string
+	var allErrors []error
 
-	if serverErrors := c.Server.validate(); len(serverErrors) > 0 {
-		allErrors = append(allErrors, serverErrors...)
+	if err := c.Server.validate(); err != nil {
+		allErrors = append(allErrors, err)
 	}
 
-	if loggingErrors := c.Logging.validate(); len(loggingErrors) > 0 {
-		allErrors = append(allErrors, loggingErrors...)
+	if err := c.Logging.validate(); err != nil {
+		allErrors = append(allErrors, err)
 	}
 
-	if globalErrors := c.Global.validate(); len(globalErrors) > 0 {
-		allErrors = append(allErrors, globalErrors...)
+	if err := c.Global.validate(); err != nil {
+		allErrors = append(allErrors, err)
 	}
 
 	if len(c.Metrics) == 0 {
-		allErrors = append(allErrors, "at least one metric must be defined")
+		allErrors = append(allErrors, errors.New("at least one metric must be defined"))
 	} else {
 		for _, metric := range c.Metrics {
-			if metricErrors := metric.validate(); len(metricErrors) > 0 {
-				for _, err := range metricErrors {
-					allErrors = append(allErrors, fmt.Sprintf("metric '%s': %s", metric.Name, err))
-				}
+			if err := metric.validate(); err != nil {
+				allErrors = append(allErrors, fmt.Errorf("metric '%s': %w", metric.Name, err))
 			}
 		}
 	}
 
-	if len(allErrors) > 0 {
-		return fmt.Errorf(strings.Join(allErrors, "; "))
-	}
-
-	return nil
+	return errors.Join(allErrors...)
 }
 
-func (s *Server) validate() []string {
-	var errs []string
+func (s *Server) validate() error {
+	var errs []error
 
 	if s.ListenAddress == "" {
-		errs = append(errs, "server.listen_address is required")
+		errs = append(errs, errors.New("server.listen_address is required"))
 	}
 
 	if s.MetricsPath == "" {
-		errs = append(errs, "server.metrics_path is required")
+		errs = append(errs, errors.New("server.metrics_path is required"))
 	} else if s.MetricsPath[0] != '/' {
-		errs = append(errs, "server.metrics_path must start with '/'")
+		errs = append(errs, errors.New("server.metrics_path must start with '/'"))
 	}
 
-	return errs
+	return errors.Join(errs...)
 }
 
-func (l *Logging) validate() []string {
-	var errs []string
-
+func (l *Logging) validate() error {
 	validLevels := map[string]bool{
 		"info":  true,
 		"debug": true,
@@ -77,112 +69,110 @@ func (l *Logging) validate() []string {
 	}
 
 	if !validLevels[l.Level] {
-		errs = append(errs, fmt.Sprintf("logging.level: %s is not valid. Valid levels: info, debug, production, error", l.Level))
+		return fmt.Errorf("logging.level: %s is not valid. Valid levels: info, debug, error", l.Level)
 	}
-	return errs
+	return nil
 }
 
-func (g *Global) validate() []string {
-	var errs []string
+func (g *Global) validate() error {
+	var errs []error
 
 	if g.Timeout <= 0 {
-		errs = append(errs, "global.timeout must be > 0 (10s)")
+		errs = append(errs, errors.New("global.timeout must be > 0 (10s)"))
 	}
 
 	if g.CacheTTL <= 0 {
-		errs = append(errs, "global.cache_ttl must be > 0 (5m)")
+		errs = append(errs, errors.New("global.cache_ttl must be > 0 (5m)"))
 	}
 
 	if g.MaxConcurrent <= 0 {
-		errs = append(errs, "global.max_concurrent must be > 0")
+		errs = append(errs, errors.New("global.max_concurrent must be > 0"))
 	}
 
-	return errs
+	return errors.Join(errs...)
 }
 
-func (m *Metric) validate() []string {
-	var errs []string
+func (m *Metric) validate() error {
+	var errs []error
 
 	if m.Name == "" {
-		errs = append(errs, "name is required")
+		errs = append(errs, errors.New("name is required"))
 	}
 
 	if m.Help == "" {
-		errs = append(errs, "help string is required")
+		errs = append(errs, errors.New("help string is required"))
 	}
 
 	if !validTypes[m.Type] {
-		errs = append(errs, "type is invalid. valid: gauge, counter")
+		errs = append(errs, errors.New("type is invalid. valid: gauge, counter"))
 	}
 
 	if m.Command == "" {
-		errs = append(errs, "command is required")
+		errs = append(errs, errors.New("command is required"))
 	}
 
-	if labelErrors := validateLabels(m.Labels); len(labelErrors) > 0 {
-		errs = append(errs, labelErrors...)
+	if err := validateLabels(m.Labels); err != nil {
+		errs = append(errs, err)
 	}
 
 	for _, subMetric := range m.SubMetrics {
-		if subMetricErrors := subMetric.validate(); len(subMetricErrors) > 0 {
-			for _, err := range subMetricErrors {
-				errs = append(errs, fmt.Sprintf("sub-metric '%s': %s", subMetric.Name, err))
-			}
+		if err := subMetric.validate(); err != nil {
+			errs = append(errs, fmt.Errorf("sub-metric '%s': %w", subMetric.Name, err))
 		}
 	}
 
-	return errs
+	return errors.Join(errs...)
 }
 
-func (sm *SubMetric) validate() []string {
-	var errs []string
+func (sm *SubMetric) validate() error {
+	var errs []error
 
 	if sm.Name == "" {
-		errs = append(errs, "name is required")
+		errs = append(errs, errors.New("name is required"))
 	}
 
 	if sm.Help == "" {
-		errs = append(errs, "help string is required")
+		errs = append(errs, errors.New("help string is required"))
 	}
 
 	if !validTypes[sm.Type] {
-		errs = append(errs, "type is invalid. valid: gauge, count")
+		errs = append(errs, errors.New("type is invalid. valid: gauge, counter"))
 	}
 
 	if sm.Field < 0 {
-		errs = append(errs, "field must be >= 0")
+		errs = append(errs, errors.New("field must be >= 0"))
 	}
 
-	if labelErrors := validateLabels(sm.Labels); len(labelErrors) > 0 {
-		errs = append(errs, labelErrors...)
+	if err := validateLabels(sm.Labels); err != nil {
+		errs = append(errs, err)
 	}
 
 	for _, dynLbl := range sm.DynamicLabels {
 		if dynLbl.Name == "" {
-			errs = append(errs, "dynamic_label name is required")
+			errs = append(errs, errors.New("dynamic_label name is required"))
 		}
 		if !metricRegex.MatchString(dynLbl.Name) {
-			errs = append(errs, fmt.Sprintf("dynamic_label name: %s is not valid", dynLbl.Name))
+			errs = append(errs, fmt.Errorf("dynamic_label name: %s is not valid", dynLbl.Name))
 		}
 		if dynLbl.Field < 0 {
-			errs = append(errs, fmt.Sprintf("dynamic_label name: %s ,field must be >= 0", dynLbl.Name))
+			errs = append(errs, fmt.Errorf("dynamic_label name: %s, field must be >= 0", dynLbl.Name))
 		}
 	}
 
-	return errs
+	return errors.Join(errs...)
 }
 
-func validateLabels(labels map[string]string) []string {
-	var errs []string
+func validateLabels(labels map[string]string) error {
+	var errs []error
 
 	for name, str := range labels {
 		if !metricRegex.MatchString(name) {
-			errs = append(errs, fmt.Sprintf("label name %s id not valid", name))
+			errs = append(errs, fmt.Errorf("label name %s is not valid", name))
 		}
 		if str == "" {
-			errs = append(errs, fmt.Sprintf("label %s requires value", name))
+			errs = append(errs, fmt.Errorf("label %s requires value", name))
 		}
 	}
 
-	return errs
+	return errors.Join(errs...)
 }
