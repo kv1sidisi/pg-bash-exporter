@@ -12,7 +12,9 @@ type Executor interface {
 	ExecuteCommand(ctx context.Context, command string) (string, error)
 }
 
-func ExecuteCommand(ctx context.Context, command string) (string, error) {
+type BashExecutor struct{}
+
+func (e *BashExecutor) ExecuteCommand(ctx context.Context, command string) (string, error) {
 	cmd := exec.CommandContext(ctx, "bash", "-c", command)
 
 	var stdout, stderr bytes.Buffer
