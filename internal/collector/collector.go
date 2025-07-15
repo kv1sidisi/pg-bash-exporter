@@ -2,6 +2,7 @@ package collector
 
 import (
 	"context"
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"log/slog"
 	"pg-bash-exporter/internal/config"
@@ -133,14 +134,14 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	c.logger.Info("Metrics collection finished")
 }
 
-func toPrometheusValueType(metricType string) prometheus.ValueType {
+func toPrometheusValueType(metricType string) (prometheus.ValueType, error) {
 	switch metricType {
 	case "gauge":
-		return prometheus.GaugeValue
+		return prometheus.GaugeValue, nil
 	case "counter":
-		return prometheus.CounterValue
+		return prometheus.CounterValue, nil
 	default:
-		return 0
+		return 0, fmt.Errorf("unsupported metric type %s", metricType)
 	}
 }
 
@@ -163,9 +164,9 @@ func (c *Collector) collectSimpleMetric(ch chan<- prometheus.Metric, metricConfi
 		return
 	}
 
-	valueType := toPrometheusValueType(metricConfig.Type)
-	if valueType == 0 {
-		c.logger.Error("unsupported metric type", "metric", metricConfig.Name, "type", metricConfig.Type)
+	valueType, err := toPrometheusValueType(metricConfig.Type)
+	if err != nil {
+		c.logger.Error(err.Error(), "metric", metricConfig.Name)
 		return
 	}
 
@@ -216,10 +217,10 @@ func (c *Collector) collectComplicatedMetric(ch chan<- prometheus.Metric, metric
 				continue
 			}
 
-			valueType := toPrometheusValueType(subMetric.Type)
-			if valueType == 0 {
-				c.logger.Error("unsupported sub-metric type", "sub-metric", subMetric.Name, "type", subMetric.Type)
-				continue
+			valueType, err := toPrometheusValueType(subMetric.Type)
+			if err != nil {
+				c.logger.Error(err.Error(), "metric", subMetric.Name)
+				return
 			}
 			labels := mergeLabels(metricConfig.Labels, subMetric.Labels)
 
