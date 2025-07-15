@@ -8,7 +8,13 @@ import (
 	"strings"
 )
 
-func ExecuteCommand(ctx context.Context, command string) (string, error) {
+type Executor interface {
+	ExecuteCommand(ctx context.Context, command string) (string, error)
+}
+
+type BashExecutor struct{}
+
+func (e *BashExecutor) ExecuteCommand(ctx context.Context, command string) (string, error) {
 	cmd := exec.CommandContext(ctx, "bash", "-c", command)
 
 	var stdout, stderr bytes.Buffer
@@ -22,6 +28,5 @@ func ExecuteCommand(ctx context.Context, command string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("command execution failed: %w; stderr: %s", err, strings.TrimSpace(stderr.String()))
 	}
-
 	return strings.TrimSpace(stdout.String()), nil
 }

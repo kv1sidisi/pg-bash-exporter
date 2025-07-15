@@ -12,6 +12,7 @@ import (
 	"os"
 	"pg-bash-exporter/internal/collector"
 	"pg-bash-exporter/internal/config"
+	"pg-bash-exporter/internal/executor"
 )
 
 var ValidationFlag bool
@@ -49,7 +50,9 @@ func main() {
 
 	slog.Info("Configuration loaded and logger initialized successfully")
 
-	collector := collector.NewCollector(&cfg, slog.Default())
+	exec := &executor.BashExecutor{}
+
+	collector := collector.NewCollector(&cfg, slog.Default(), exec)
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
