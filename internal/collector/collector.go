@@ -140,19 +140,22 @@ func toPrometheusValueType(metricType string) prometheus.ValueType {
 
 // collectSimpleMetric handles metric that are defined by single command with single output value and without sub-metrics
 func (c *Collector) collectSimpleMetric(ch chan<- prometheus.Metric, metricConfig config.Metric) {
-	out, err := executor.ExecuteCommand(context.Background(), metricConfig.Command)
+	out, err := c.executor.ExecuteCommand(context.Background(), metricConfig.Command)
 	if err != nil {
 		c.logger.Error("failed to execute command for metric", "metric", metricConfig.Name, "error", err)
+		return
 	}
 
 	result, err := strconv.ParseFloat(out, 64)
 	if err != nil {
 		c.logger.Error("failed to parse command output", "metric", metricConfig.Name, "error", err)
+		return
 	}
 
 	valueType := toPrometheusValueType(metricConfig.Type)
 	if valueType == 0 {
 		c.logger.Error("unsupported metric type", "metric", metricConfig.Name, "type", metricConfig.Type)
+		return
 	}
 
 	metric, err := prometheus.NewConstMetric(
@@ -161,6 +164,7 @@ func (c *Collector) collectSimpleMetric(ch chan<- prometheus.Metric, metricConfi
 		result)
 	if err != nil {
 		c.logger.Error("failed to create metric", "metric", metricConfig.Name, "error", err)
+		return
 	}
 	ch <- metric
 
@@ -170,9 +174,10 @@ func (c *Collector) collectSimpleMetric(ch chan<- prometheus.Metric, metricConfi
 // collectComplicatedMetric handles metric group defined with sub-metrics section.
 // It runs one command and parses each line of the output to sub-metrics metrics.
 func (c *Collector) collectComplicatedMetric(ch chan<- prometheus.Metric, metricConfig config.Metric) {
-	out, err := executor.ExecuteCommand(context.Background(), metricConfig.Command)
+	out, err := c.executor.ExecuteCommand(context.Background(), metricConfig.Command)
 	if err != nil {
 		c.logger.Error("failed to execute command for metric", "metric", metricConfig.Name, "error", err)
+		return
 	}
 
 	lines := strings.Split(strings.TrimSpace(out), "\n")
@@ -197,6 +202,7 @@ func (c *Collector) collectComplicatedMetric(ch chan<- prometheus.Metric, metric
 			valueType := toPrometheusValueType(subMetric.Type)
 			if valueType == 0 {
 				c.logger.Error("unsupported sub-metric type", "sub-metric", subMetric.Name, "type", subMetric.Type)
+				continue
 			}
 			labels := mergeLabels(metricConfig.Labels, subMetric.Labels)
 
@@ -211,6 +217,7 @@ func (c *Collector) collectComplicatedMetric(ch chan<- prometheus.Metric, metric
 			)
 			if err != nil {
 				c.logger.Error("failed to create sub-metric", "sub-metric", subMetric.Name, "error", err)
+				continue
 			}
 			ch <- metric
 			c.logger.Debug("sub-metric collected successfully", "sub-metric", subMetric.Name)
