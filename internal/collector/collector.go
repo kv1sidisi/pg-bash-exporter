@@ -11,14 +11,16 @@ import (
 )
 
 type Collector struct {
-	config *config.Config
-	logger *slog.Logger
+	config   *config.Config
+	logger   *slog.Logger
+	executor executor.Executor
 }
 
-func NewCollector(cfg *config.Config, logger *slog.Logger) *Collector {
+func NewCollector(cfg *config.Config, logger *slog.Logger, exec executor.Executor) *Collector {
 	return &Collector{
-		config: cfg,
-		logger: logger,
+		config:   cfg,
+		logger:   logger,
+		executor: exec,
 	}
 }
 
