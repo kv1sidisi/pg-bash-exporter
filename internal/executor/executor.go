@@ -8,10 +8,6 @@ import (
 	"strings"
 )
 
-type Executor interface {
-	ExecuteCommand(ctx context.Context, command string) (string, error)
-}
-
 type BashExecutor struct{}
 
 func (e *BashExecutor) ExecuteCommand(ctx context.Context, command string) (string, error) {

@@ -5,18 +5,21 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"log/slog"
 	"pg-bash-exporter/internal/config"
-	"pg-bash-exporter/internal/executor"
 	"strconv"
 	"strings"
 )
 
+type Executor interface {
+	ExecuteCommand(ctx context.Context, command string) (string, error)
+}
+
 type Collector struct {
 	config   *config.Config
 	logger   *slog.Logger
-	executor executor.Executor
+	executor Executor
 }
 
-func NewCollector(cfg *config.Config, logger *slog.Logger, exec executor.Executor) *Collector {
+func NewCollector(cfg *config.Config, logger *slog.Logger, exec Executor) *Collector {
 	return &Collector{
 		config:   cfg,
 		logger:   logger,
