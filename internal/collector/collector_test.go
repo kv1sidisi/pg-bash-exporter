@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
 	"pg-bash-exporter/internal/config"
 	"testing"
 )
@@ -153,6 +154,28 @@ func TestGetLabelValues(t *testing.T) {
 				if value != tc.expected[i] {
 					t.Errorf("expected value %s, but got %s", tc.expected[i], value)
 				}
+			}
+		})
+	}
+}
+
+func TestToPrometheusValueType(t *testing.T) {
+	testCases := []struct {
+		name       string
+		metricType string
+		expected   prometheus.ValueType
+	}{
+		{"gauge", "gauge", prometheus.GaugeValue},
+		{"counter", "counter", prometheus.CounterValue},
+		{"invalid type", "invalid", 0},
+		{"empty type", "", 0},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			valueType := toPrometheusValueType(tc.metricType)
+			if valueType != tc.expected {
+				t.Errorf("expected %v, but got %v", tc.expected, valueType)
 			}
 		})
 	}
