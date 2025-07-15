@@ -45,7 +45,8 @@ func TestExecuteCommand(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), tc.timeout)
 			defer cancel()
 
-			gotOutput, err := ExecuteCommand(ctx, tc.command)
+			executor := &BashExecutor{}
+			gotOutput, err := executor.ExecuteCommand(ctx, tc.command)
 
 			if tc.wantErr {
 				if err == nil {

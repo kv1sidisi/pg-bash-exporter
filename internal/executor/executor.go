@@ -28,6 +28,5 @@ func (e *BashExecutor) ExecuteCommand(ctx context.Context, command string) (stri
 	if err != nil {
 		return "", fmt.Errorf("command execution failed: %w; stderr: %s", err, strings.TrimSpace(stderr.String()))
 	}
-
 	return strings.TrimSpace(stdout.String()), nil
 }
