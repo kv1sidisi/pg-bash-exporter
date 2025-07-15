@@ -104,8 +104,10 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 
 			dynLblNames := getLabelNames(subMetric.DynamicLabels)
 
+			fullName := metricConfig.Name + "_" + subMetric.Name
+
 			desc := prometheus.NewDesc(
-				subMetric.Name,
+				fullName,
 				subMetric.Help,
 				dynLblNames,
 				labels,
@@ -224,8 +226,10 @@ func (c *Collector) collectComplicatedMetric(ch chan<- prometheus.Metric, metric
 			dynLblNames := getLabelNames(subMetric.DynamicLabels)
 			dynLblValues := getLabelValues(fields, subMetric.DynamicLabels)
 
+			fullName := metricConfig.Name + "_" + subMetric.Name
+
 			metric, err := prometheus.NewConstMetric(
-				prometheus.NewDesc(subMetric.Name, subMetric.Help, dynLblNames, labels),
+				prometheus.NewDesc(fullName, subMetric.Help, dynLblNames, labels),
 				valueType,
 				val,
 				dynLblValues...,
