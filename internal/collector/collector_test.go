@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"pg-bash-exporter/internal/config"
 	"testing"
 )
 
@@ -52,6 +53,105 @@ func TestMergeLabels(t *testing.T) {
 			for k, v := range tc.expected {
 				if merged[k] != v {
 					t.Errorf("expected label %s with value %s, but got %s", k, v, merged[k])
+				}
+			}
+		})
+	}
+}
+
+func TestGetLabelNames(t *testing.T) {
+	testCases := []struct {
+		name     string
+		labels   []config.DynamicLabel
+		expected []string
+	}{
+		{
+			name:     "nil slice",
+			labels:   nil,
+			expected: nil,
+		},
+		{
+			name:     "empty slice",
+			labels:   []config.DynamicLabel{},
+			expected: nil,
+		},
+		{
+			name: "one label",
+			labels: []config.DynamicLabel{
+				{Name: "label1"},
+			},
+			expected: []string{"label1"},
+		},
+		{
+			name: "multiple labels",
+			labels: []config.DynamicLabel{
+				{Name: "label1"},
+				{Name: "label2"},
+			},
+			expected: []string{"label1", "label2"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			names := getLabelNames(tc.labels)
+			if len(names) != len(tc.expected) {
+				t.Errorf("expected %d names, but got %d", len(tc.expected), len(names))
+			}
+			for i, name := range names {
+				if name != tc.expected[i] {
+					t.Errorf("expected name %s, but got %s", tc.expected[i], name)
+				}
+			}
+		})
+	}
+}
+
+func TestGetLabelValues(t *testing.T) {
+	fields := []string{"field0", "field1", "field2"}
+
+	testCases := []struct {
+		name     string
+		labels   []config.DynamicLabel
+		expected []string
+	}{
+		{
+			name:     "nil slice",
+			labels:   nil,
+			expected: nil,
+		},
+		{
+			name:     "empty slice",
+			labels:   []config.DynamicLabel{},
+			expected: nil,
+		},
+		{
+			name: "valid labels",
+			labels: []config.DynamicLabel{
+				{Field: 0},
+				{Field: 2},
+			},
+			expected: []string{"field0", "field2"},
+		},
+		{
+			name: "field index out of range",
+			labels: []config.DynamicLabel{
+				{Field: 0},
+				{Field: 5},
+			},
+			expected: []string{"field0", ""},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			values := getLabelValues(fields, tc.labels)
+			if len(values) != len(tc.expected) {
+				t.Errorf("expected %d values, but got %d", len(tc.expected), len(values))
+			}
+			for i, value := range values {
+				if value != tc.expected[i] {
+					t.Errorf("expected value %s, but got %s", tc.expected[i], value)
 				}
 			}
 		})
