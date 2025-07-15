@@ -30,6 +30,13 @@ func TestExecuteCommand(t *testing.T) {
 			wantErr:     true,
 			errContains: "error message",
 		},
+		{
+			name:        "context deadline exceeded",
+			command:     "sleep 2",
+			timeout:     50 * time.Millisecond,
+			wantErr:     true,
+			errContains: "context deadline exceeded",
+		},
 	}
 
 	for _, tc := range testCases {
