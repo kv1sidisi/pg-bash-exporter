@@ -46,7 +46,7 @@ func TestExecuteCommand(t *testing.T) {
 			defer cancel()
 
 			executor := &BashExecutor{}
-			gotOutput, err := executor.ExecuteCommand(ctx, tc.command)
+			gotOutput, err := executor.ExecuteCommand(ctx, tc.command, 0)
 
 			if tc.wantErr {
 				if err == nil {

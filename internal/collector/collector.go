@@ -5,18 +5,22 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"log/slog"
 	"pg-bash-exporter/internal/config"
-	"pg-bash-exporter/internal/executor"
 	"strconv"
 	"strings"
+	"time"
 )
+
+type Executor interface {
+	ExecuteCommand(ctx context.Context, command string, timeout time.Duration) (string, error)
+}
 
 type Collector struct {
 	config   *config.Config
 	logger   *slog.Logger
-	executor executor.Executor
+	executor Executor
 }
 
-func NewCollector(cfg *config.Config, logger *slog.Logger, exec executor.Executor) *Collector {
+func NewCollector(cfg *config.Config, logger *slog.Logger, exec Executor) *Collector {
 	return &Collector{
 		config:   cfg,
 		logger:   logger,
@@ -140,7 +144,12 @@ func toPrometheusValueType(metricType string) prometheus.ValueType {
 
 // collectSimpleMetric handles metric that are defined by single command with single output value and without sub-metrics
 func (c *Collector) collectSimpleMetric(ch chan<- prometheus.Metric, metricConfig config.Metric) {
-	out, err := c.executor.ExecuteCommand(context.Background(), metricConfig.Command)
+	timeout := c.config.Global.Timeout
+
+	if metricConfig.Timeout > 0 {
+		timeout = metricConfig.Timeout
+	}
+	out, err := c.executor.ExecuteCommand(context.Background(), metricConfig.Command, timeout)
 	if err != nil {
 		c.logger.Error("failed to execute command for metric", "metric", metricConfig.Name, "error", err)
 		return
@@ -174,7 +183,13 @@ func (c *Collector) collectSimpleMetric(ch chan<- prometheus.Metric, metricConfi
 // collectComplicatedMetric handles metric group defined with sub-metrics section.
 // It runs one command and parses each line of the output to sub-metrics metrics.
 func (c *Collector) collectComplicatedMetric(ch chan<- prometheus.Metric, metricConfig config.Metric) {
-	out, err := c.executor.ExecuteCommand(context.Background(), metricConfig.Command)
+	timeout := c.config.Global.Timeout
+
+	if metricConfig.Timeout > 0 {
+		timeout = metricConfig.Timeout
+	}
+
+	out, err := c.executor.ExecuteCommand(context.Background(), metricConfig.Command, timeout)
 	if err != nil {
 		c.logger.Error("failed to execute command for metric", "metric", metricConfig.Name, "error", err)
 		return

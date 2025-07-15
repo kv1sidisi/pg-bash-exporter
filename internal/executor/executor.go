@@ -3,18 +3,22 @@ package executor
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 )
-
-type Executor interface {
-	ExecuteCommand(ctx context.Context, command string) (string, error)
-}
 
 type BashExecutor struct{}
 
-func (e *BashExecutor) ExecuteCommand(ctx context.Context, command string) (string, error) {
+func (e *BashExecutor) ExecuteCommand(ctx context.Context, command string, timeout time.Duration) (string, error) {
+	if timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, timeout)
+		defer cancel()
+	}
+
 	cmd := exec.CommandContext(ctx, "bash", "-c", command)
 
 	var stdout, stderr bytes.Buffer
@@ -22,6 +26,9 @@ func (e *BashExecutor) ExecuteCommand(ctx context.Context, command string) (stri
 	cmd.Stderr = &stderr
 
 	err := cmd.Run()
+	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return "", fmt.Errorf("command timed out after %s: %w", timeout, ctx.Err())
+	}
 	if ctx.Err() != nil {
 		return "", fmt.Errorf("command execution failed: %w", ctx.Err())
 	}
