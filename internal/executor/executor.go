@@ -16,6 +16,9 @@ func ExecuteCommand(ctx context.Context, command string) (string, error) {
 	cmd.Stderr = &stderr
 
 	err := cmd.Run()
+	if ctx.Err() != nil {
+		return "", fmt.Errorf("command execution failed: %w", ctx.Err())
+	}
 	if err != nil {
 		return "", fmt.Errorf("command execution failed: %w; stderr: %s", err, strings.TrimSpace(stderr.String()))
 	}
