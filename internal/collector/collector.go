@@ -45,6 +45,21 @@ func mergeLabels(parent, child map[string]string) map[string]string {
 	return merged
 }
 
+// getLabelNames gets names from DynamicLabel struct slice.
+func getLabelNames(labels []config.DynamicLabel) []string {
+	if len(labels) == 0 {
+		return nil
+	}
+
+	names := make([]string, len(labels))
+
+	for i, l := range labels {
+		names[i] = l.Name
+	}
+
+	return names
+}
+
 func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	for _, metricConfig := range c.config.Metrics {
 		if len(metricConfig.SubMetrics) == 0 {
@@ -60,6 +75,8 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 		}
 		for _, subMetric := range metricConfig.SubMetrics {
 			labels := mergeLabels(metricConfig.Labels, subMetric.Labels)
+
+			dynLblNames := getLabelNames(subMetric.DynamicLabels)
 
 			desc := prometheus.NewDesc(
 				subMetric.Name,
