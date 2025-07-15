@@ -60,6 +60,26 @@ func getLabelNames(labels []config.DynamicLabel) []string {
 	return names
 }
 
+// getLabelValues gets names from DynamicLabel struct slice and matches it with field number.
+func getLabelValues(fields []string, labels []config.DynamicLabel) []string {
+	if len(labels) == 0 {
+		return nil
+	}
+
+	values := make([]string, len(labels))
+
+	for i, l := range labels {
+		if l.Field >= len(fields) {
+			values[i] = ""
+			continue
+		}
+
+		values[i] = fields[l.Field]
+	}
+
+	return values
+}
+
 func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	for _, metricConfig := range c.config.Metrics {
 		if len(metricConfig.SubMetrics) == 0 {
@@ -81,7 +101,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 			desc := prometheus.NewDesc(
 				subMetric.Name,
 				subMetric.Help,
-				nil,
+				dynLblNames,
 				labels,
 			)
 			ch <- desc
@@ -178,10 +198,14 @@ func (c *Collector) collectComplicatedMetric(ch chan<- prometheus.Metric, metric
 			}
 			labels := mergeLabels(metricConfig.Labels, subMetric.Labels)
 
+			dynLblNames := getLabelNames(subMetric.DynamicLabels)
+			dynLblValues := getLabelValues(fields, subMetric.DynamicLabels)
+
 			metric, err := prometheus.NewConstMetric(
-				prometheus.NewDesc(subMetric.Name, subMetric.Help, nil, labels),
+				prometheus.NewDesc(subMetric.Name, subMetric.Help, dynLblNames, labels),
 				valueType,
 				val,
+				dynLblValues...,
 			)
 			if err != nil {
 				c.logger.Error("failed to create sub-metric", "sub-metric", subMetric.Name, "error", err)
