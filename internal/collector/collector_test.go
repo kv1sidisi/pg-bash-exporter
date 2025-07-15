@@ -364,7 +364,10 @@ func TestToPrometheusValueType(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			valueType := toPrometheusValueType(tc.metricType)
+			valueType, err := toPrometheusValueType(tc.metricType)
+			if err != nil {
+				t.Errorf("expected %v, but got error: %v", tc.expected, err)
+			}
 			if valueType != tc.expected {
 				t.Errorf("expected %v, but got %v", tc.expected, valueType)
 			}
