@@ -9,6 +9,7 @@ import (
 	"pg-bash-exporter/internal/config"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -20,7 +21,7 @@ type mockExecutor struct {
 }
 
 // ExecuteCommand returns mock output and error.
-func (m *mockExecutor) ExecuteCommand(ctx context.Context, command string) (string, error) {
+func (m *mockExecutor) ExecuteCommand(ctx context.Context, command string, timeout time.Duration) (string, error) {
 	return m.output, m.err
 }
 
@@ -41,6 +42,9 @@ func TestCollect(t *testing.T) {
 						Type:    "gauge",
 						Command: "echo 123",
 					},
+				},
+				Global: config.Global{
+					Timeout: 0,
 				},
 			},
 			executor: &mockExecutor{
@@ -78,6 +82,9 @@ simple_metric 123
 						},
 					},
 				},
+				Global: config.Global{
+					Timeout: 0,
+				},
 			},
 			executor: &mockExecutor{
 				output: "10 20",
@@ -103,12 +110,16 @@ sub_two 20
 						Command: "exit 1",
 					},
 				},
+				Global: config.Global{
+					Timeout: 0,
+				},
 			},
 			executor: &mockExecutor{
 				output: "",
 				err:    errors.New("command failed"),
 			},
-			expectedMetric: ``,
+			expectedMetric: `
+`,
 		},
 		{
 			name: "metric with dynamic labels",
@@ -132,6 +143,9 @@ sub_two 20
 						},
 					},
 				},
+				Global: config.Global{
+					Timeout: 0,
+				},
 			},
 			executor: &mockExecutor{
 				output: "label_val1 10\nlabel_val2 20",
@@ -143,6 +157,28 @@ sub_two 20
 dynamic_sub_metric{my_label="label_val1"} 10
 dynamic_sub_metric{my_label="label_val2"} 20
 `,
+		},
+		{
+			name: "command timeout",
+			config: &config.Config{
+				Metrics: []config.Metric{
+					{
+						Name:    "timeout_metric",
+						Help:    "metric that times out.",
+						Type:    "gauge",
+						Command: "sleep 5",
+						Timeout: 1 * time.Millisecond,
+					},
+				},
+				Global: config.Global{
+					Timeout: 1 * time.Second,
+				},
+			},
+			executor: &mockExecutor{
+				output: "",
+				err:    context.DeadlineExceeded,
+			},
+			expectedMetric: ``,
 		},
 	}
 
