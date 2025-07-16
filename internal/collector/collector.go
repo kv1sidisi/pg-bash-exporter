@@ -49,7 +49,6 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 				metricConfig.Labels)
 
 			ch <- desc
-			c.logger.Debug("simple metric description added", "metric", metricConfig.Name)
 			continue
 		}
 		for _, subMetric := range metricConfig.SubMetrics {
@@ -66,17 +65,15 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 				labels,
 			)
 			ch <- desc
-			c.logger.Debug("sub-metric description added", "sub-metric", subMetric.Name)
 		}
 	}
-
+	c.logger.Debug("metric description reading ended")
 }
 
 func (c *Collector) ReloadConfig() error {
 	var newCfg config.Config
 
 	if err := config.Load(c.configPath, &newCfg); err != nil {
-		c.logger.Error("failed to reload config", "error", err)
 		return err
 	}
 
@@ -101,7 +98,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 	Checks.Inc()
 
-	c.logger.Info("Metrics collection started")
+	c.logger.Debug("Metrics collection started")
 
 	wg := sync.WaitGroup{}
 
@@ -132,5 +129,5 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 	wg.Wait()
 
-	c.logger.Info("Metrics collection finished")
+	c.logger.Debug("Metrics collection finished")
 }
