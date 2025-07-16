@@ -59,7 +59,7 @@ func main() {
 
 	exec := &executor.BashExecutor{}
 
-	metricsCollector := collector.NewCollector(&cfg, slog.Default(), exec, cache)
+	metricsCollector := collector.NewCollector(&cfg, slog.Default(), exec, cache, configPath)
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(metricsCollector)
@@ -87,6 +87,19 @@ func main() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("failed to start server", "error", err)
 			os.Exit(1)
+		}
+	}()
+
+	hReload := make(chan os.Signal, 1)
+	signal.Notify(hReload, syscall.SIGHUP)
+
+	go func() {
+		for {
+			<-hReload
+			slog.Info("received SIGHUP, attempting to reload config")
+			if err := metricsCollector.ReloadConfig(); err != nil {
+				slog.Error("config reload failed", "error", err)
+			}
 		}
 	}()
 
