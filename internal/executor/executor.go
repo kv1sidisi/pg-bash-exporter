@@ -3,7 +3,6 @@ package executor
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -27,14 +26,10 @@ func (e *BashExecutor) ExecuteCommand(ctx context.Context, command string, timeo
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	err := cmd.Run()
-	if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-		return "", fmt.Errorf("command timed out after %s: %w", timeout, ctx.Err())
-	}
-	if ctx.Err() != nil {
-		return "", fmt.Errorf("command execution failed: %w", ctx.Err())
-	}
-	if err != nil {
+	if err := cmd.Run(); err != nil {
+		if ctx.Err() != nil {
+			return "", fmt.Errorf("command execution failed due to context: %w", ctx.Err())
+		}
 		return "", fmt.Errorf("command execution failed: %w; stderr: %s", err, strings.TrimSpace(stderr.String()))
 	}
 	return strings.TrimSpace(stdout.String()), nil

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 var (
@@ -121,16 +122,8 @@ func (m *Metric) validate() error {
 		errs = append(errs, err)
 	}
 
-	for _, dynLbl := range m.DynamicLabels {
-		if dynLbl.Name == "" {
-			errs = append(errs, errors.New("dynamic_label name is required"))
-		}
-		if !metricRegex.MatchString(dynLbl.Name) {
-			errs = append(errs, fmt.Errorf("dynamic_label name: %s is not valid", dynLbl.Name))
-		}
-		if dynLbl.Field < 0 {
-			errs = append(errs, fmt.Errorf("dynamic_label name: %s, field must be >= 0", dynLbl.Name))
-		}
+	if err := validateDynLabels(m.DynamicLabels); err != nil {
+		errs = append(errs, err)
 	}
 
 	if err := validateLabels(m.Labels); err != nil {
@@ -171,12 +164,25 @@ func (sm *SubMetric) validate() error {
 		errs = append(errs, err)
 	}
 
-	for _, dynLbl := range sm.DynamicLabels {
+	if err := validateDynLabels(sm.DynamicLabels); err != nil {
+		errs = append(errs, err)
+	}
+
+	return errors.Join(errs...)
+}
+
+func validateDynLabels(labels []DynamicLabel) error {
+	var errs []error
+
+	for _, dynLbl := range labels {
 		if dynLbl.Name == "" {
 			errs = append(errs, errors.New("dynamic_label name is required"))
 		}
 		if !metricRegex.MatchString(dynLbl.Name) {
 			errs = append(errs, fmt.Errorf("dynamic_label name: %s is not valid", dynLbl.Name))
+		}
+		if strings.HasPrefix(dynLbl.Name, "__") {
+			errs = append(errs, fmt.Errorf("dynamic_label name '%s' must not start with '__'", dynLbl.Name))
 		}
 		if dynLbl.Field < 0 {
 			errs = append(errs, fmt.Errorf("dynamic_label name: %s, field must be >= 0", dynLbl.Name))
@@ -192,6 +198,9 @@ func validateLabels(labels map[string]string) error {
 	for name, str := range labels {
 		if !metricRegex.MatchString(name) {
 			errs = append(errs, fmt.Errorf("label name %s is not valid", name))
+		}
+		if strings.HasPrefix(name, "__") {
+			errs = append(errs, fmt.Errorf("label name '%s' must not start with '__'", name))
 		}
 		if str == "" {
 			errs = append(errs, fmt.Errorf("label %s requires value", name))
