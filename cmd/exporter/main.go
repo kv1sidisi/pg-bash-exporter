@@ -59,7 +59,7 @@ func main() {
 
 	exec := &executor.BashExecutor{}
 
-	collector := collector.NewCollector(&cfg, slog.Default(), exec, cache)
+	metricsCollector := collector.NewCollector(&cfg, slog.Default(), exec, cache)
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
