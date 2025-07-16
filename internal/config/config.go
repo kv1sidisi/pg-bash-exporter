@@ -20,10 +20,10 @@ type Logging struct {
 }
 
 type Global struct {
-	Timeout          time.Duration `yaml:"timeout"`
-	CacheTTL         time.Duration `yaml:"cache_ttl"`
-	MaxConcurrent    int           `yaml:"max_concurrent"`
-	CommandBlacklist []string      `yaml:"command_blacklist"`
+	Timeout          time.Duration `yaml:"timeout,omitempty"`
+	CacheTTL         time.Duration `yaml:"cache_ttl,omitempty"`
+	MaxConcurrent    int           `yaml:"max_concurrent,omitempty"`
+	CommandBlacklist []string      `yaml:"command_blacklist,omitempty"`
 }
 
 type Metric struct {

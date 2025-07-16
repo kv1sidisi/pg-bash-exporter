@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -28,6 +29,18 @@ func GetPath() string {
 	return "configs/config.yaml"
 }
 
+func (c *Config) applyDefaults() {
+	if c.Global.Timeout == 0 {
+		c.Global.Timeout = 30 * time.Second
+	}
+	if c.Global.CacheTTL == 0 {
+		c.Global.CacheTTL = 3 * time.Second
+	}
+	if c.Global.MaxConcurrent == 0 {
+		c.Global.MaxConcurrent = 10
+	}
+}
+
 // Load reads and parses a YAML configuration file into Config struct.
 //
 // Returns an error if the file can`t be read or if the YAML is invalid. Panics if cfg is nil.
@@ -43,6 +56,8 @@ func Load(path string, cfg *Config) error {
 	if err := yaml.Unmarshal(data, cfg); err != nil {
 		return fmt.Errorf("failed to parse YAML from file %s: %w", path, err)
 	}
+
+	cfg.applyDefaults()
 
 	err = cfg.Validate()
 	if err != nil {
