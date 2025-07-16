@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/prometheus/client_golang/prometheus"
 	"log/slog"
+	"pg-bash-exporter/internal/cache"
 	"pg-bash-exporter/internal/config"
 	"time"
 )
@@ -16,13 +17,15 @@ type Collector struct {
 	config   *config.Config
 	logger   *slog.Logger
 	executor Executor
+	cache    *cache.Cache
 }
 
-func NewCollector(cfg *config.Config, logger *slog.Logger, exec Executor) *Collector {
+func NewCollector(cfg *config.Config, logger *slog.Logger, exec Executor, cache *cache.Cache) *Collector {
 	return &Collector{
 		config:   cfg,
 		logger:   logger,
 		executor: exec,
+		cache:    cache,
 	}
 }
 

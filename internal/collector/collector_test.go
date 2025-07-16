@@ -6,6 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"io"
 	"log/slog"
+	"pg-bash-exporter/internal/cache"
 	"pg-bash-exporter/internal/config"
 	"strings"
 	"testing"
@@ -328,7 +329,7 @@ filter_metric_filtered_sub 100
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			logger := slog.New(slog.NewJSONHandler(io.Discard, nil))
-			collector := NewCollector(tc.config, logger, tc.executor)
+			collector := NewCollector(tc.config, logger, tc.executor, cache.New())
 			reg := prometheus.NewRegistry()
 			reg.MustRegister(collector)
 

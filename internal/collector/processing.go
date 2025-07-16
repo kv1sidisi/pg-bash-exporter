@@ -12,6 +12,19 @@ import (
 // returns command output split into lines.
 // returns error if command fails to execute.
 func (c *Collector) getCommandOutput(metricConfig config.Metric) ([]string, error) {
+	cacheKey := generateCacheKey(metricConfig.Name, metricConfig.Command)
+	val, err, ok := c.cache.Get(cacheKey)
+
+	ttl := c.config.Global.CacheTTL
+	if metricConfig.CacheTTL > config.DefaultCacheTTL {
+		ttl = metricConfig.CacheTTL
+	}
+
+	if ok {
+		c.logger.Debug("cache taken", "command", metricConfig.Command)
+		return strings.Split(strings.TrimSpace(val), "\n"), err
+	}
+
 	timeout := c.config.Global.Timeout
 
 	if metricConfig.Timeout > 0 {
@@ -19,6 +32,9 @@ func (c *Collector) getCommandOutput(metricConfig config.Metric) ([]string, erro
 	}
 
 	out, err := c.executor.ExecuteCommand(context.Background(), metricConfig.Command, timeout)
+
+	c.cache.Set(cacheKey, out, err, ttl)
+
 	if err != nil {
 		return nil, err
 	}
@@ -89,8 +105,10 @@ func (c *Collector) collectComplicatedMetric(ch chan<- prometheus.Metric, metric
 		}
 
 		for _, subMetric := range metricConfig.SubMetrics {
-			if matched, err := c.matchPattern(line, subMetric.Match); !matched {
-				c.logger.Error("invalid regex patterin in sub-metric", "sub-metric", subMetric.Name, "pattern", subMetric.Match, "error", err)
+			if matched, err := c.matchPattern(line, subMetric.Match); !matched || err != nil {
+				if err != nil {
+					c.logger.Error("invalid regex patterin in sub-metric", "sub-metric", subMetric.Name, "pattern", subMetric.Match, "error", err)
+				}
 				continue
 			}
 

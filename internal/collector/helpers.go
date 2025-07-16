@@ -87,3 +87,8 @@ func (c *Collector) matchPattern(line, match string) (bool, error) {
 
 	return matched, nil
 }
+
+// generateCacheKey creates a unique key for caching.
+func generateCacheKey(metricName, command string) string {
+	return fmt.Sprintf("%s::%s", metricName, command)
+}
