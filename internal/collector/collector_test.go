@@ -396,7 +396,7 @@ not_blacklisted_metric 1
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			logger := slog.New(slog.NewJSONHandler(io.Discard, nil))
-			collector := NewCollector(tc.config, logger, tc.executor, cache.New())
+			collector := NewCollector(tc.config, logger, tc.executor, cache.New(), "")
 			reg := prometheus.NewRegistry()
 			reg.MustRegister(collector)
 
@@ -610,7 +610,7 @@ func TestInternalMetrics(t *testing.T) {
 		err: errors.New("error"),
 	}
 
-	collector := NewCollector(cfg, logger, executor, cache)
+	collector := NewCollector(cfg, logger, executor, cache, "")
 
 	ch := make(chan prometheus.Metric, 10)
 	go func() {
