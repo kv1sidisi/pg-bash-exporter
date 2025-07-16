@@ -6,23 +6,22 @@ import (
 	"pg-bash-exporter/internal/config"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // getCommandOutput executes command from metric config.
 // returns command output split into lines.
 // returns error if command fails to execute.
 func (c *Collector) getCommandOutput(metricConfig config.Metric) ([]string, error) {
-	chc, ok := c.cache[metricConfig.Command]
+	val, err, ok := c.cache.Get(metricConfig.Command)
 
 	ttl := c.config.Global.CacheTTL
-	if metricConfig.CacheTTL != config.DefaultCacheTTL {
+	if metricConfig.CacheTTL > config.DefaultCacheTTL {
 		ttl = metricConfig.CacheTTL
 	}
 
-	if ok && time.Since(chc.timestamp) < ttl {
+	if ok {
 		c.logger.Debug("cache taken", "command", metricConfig.Command)
-		return strings.Split(strings.TrimSpace(chc.output), "\n"), nil
+		return strings.Split(strings.TrimSpace(val), "\n"), err
 	}
 
 	timeout := c.config.Global.Timeout
@@ -32,6 +31,9 @@ func (c *Collector) getCommandOutput(metricConfig config.Metric) ([]string, erro
 	}
 
 	out, err := c.executor.ExecuteCommand(context.Background(), metricConfig.Command, timeout)
+
+	c.cache.Set(metricConfig.Command, out, err, ttl)
+
 	if err != nil {
 		return nil, err
 	}

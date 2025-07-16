@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"pg-bash-exporter/internal/cache"
 	"pg-bash-exporter/internal/collector"
 	"pg-bash-exporter/internal/config"
 	"pg-bash-exporter/internal/executor"
@@ -50,9 +51,11 @@ func main() {
 
 	slog.Info("Configuration loaded and logger initialized successfully")
 
+	cache := cache.New()
+
 	exec := &executor.BashExecutor{}
 
-	collector := collector.NewCollector(&cfg, slog.Default(), exec)
+	collector := collector.NewCollector(&cfg, slog.Default(), exec, cache)
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
