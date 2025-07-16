@@ -70,7 +70,11 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 	wg := sync.WaitGroup{}
 
-	smph := make(chan struct{}, c.config.Global.MaxConcurrent)
+	maxConcurrent := c.config.Global.MaxConcurrent
+	if maxConcurrent <= 0 {
+		maxConcurrent = config.DefaultMaxConcurrent
+	}
+	smph := make(chan struct{}, maxConcurrent)
 
 	for _, metricConfig := range c.config.Metrics {
 		wg.Add(1)
