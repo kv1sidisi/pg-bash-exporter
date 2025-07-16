@@ -17,8 +17,26 @@ type Item struct {
 }
 
 func New() *Cache {
-	return &Cache{
+	c := &Cache{
 		items: make(map[string]Item),
+	}
+
+	go c.runGBCollector(10 * time.Minute)
+	return c
+}
+
+func (c *Cache) runGBCollector(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		c.mu.Lock()
+		for key, item := range c.items {
+			if !item.Expiration.IsZero() && time.Now().After(item.Expiration) {
+				delete(c.items, key)
+			}
+		}
+		c.mu.Unlock()
 	}
 }
 
