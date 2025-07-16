@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
@@ -10,10 +11,13 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"pg-bash-exporter/internal/cache"
 	"pg-bash-exporter/internal/collector"
 	"pg-bash-exporter/internal/config"
 	"pg-bash-exporter/internal/executor"
+	"syscall"
+	"time"
 )
 
 var ValidationFlag bool
@@ -59,21 +63,42 @@ func main() {
 
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(collector)
-	metricsHandler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 
-	http.Handle("/metrics", metricsHandler)
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`<html><head><title>PG Bash Exporter</title></head><body>PG Bash Exporter<p><a href="/metrics">Metrics</a></p></body></html>`))
-	})
+	mux := http.NewServeMux()
+	mux.Handle(cfg.Server.MetricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 
-	slog.Info("Starting pg-bash-exporter server",
-		"listen_address", cfg.Server.ListenAddress,
-		"metrics_path", cfg.Server.MetricsPath,
-	)
-	if err := http.ListenAndServe(cfg.Server.ListenAddress, nil); err != nil {
-		slog.Error("Failed to start server", "error", err)
+	server := &http.Server{
+		Addr:    cfg.Server.ListenAddress,
+		Handler: mux,
+	}
+
+	go func() {
+		slog.Info("Starting pg-bash-exporter server",
+			"listen_address", cfg.Server.ListenAddress,
+			"metrics_path", cfg.Server.MetricsPath,
+		)
+
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("failed to start server", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	<-quit
+	slog.Info("shutting down server")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		slog.Error("server forced to shutdown:", "error", err)
 		os.Exit(1)
 	}
+
+	slog.Info("server exiting")
 }
 
 func setupLogger(cfg config.Logging) {
