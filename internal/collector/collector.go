@@ -70,11 +70,19 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 	wg := sync.WaitGroup{}
 
+	smph := make(chan struct{}, c.config.Global.MaxConcurrent)
+
 	for _, metricConfig := range c.config.Metrics {
 		wg.Add(1)
 
 		go func(mc config.Metric) {
 			defer wg.Done()
+
+			smph <- struct{}{}
+			defer func() {
+				<-smph
+			}()
+
 			if len(mc.SubMetrics) == 0 {
 				c.collectSimpleMetric(ch, mc)
 			} else {
