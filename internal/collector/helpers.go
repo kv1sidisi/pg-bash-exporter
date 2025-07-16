@@ -8,9 +8,7 @@ import (
 )
 
 // mergeLabels creates a new map containing labels from parent and child metric.
-//
 // If label exists in both maps, value from child map is used.
-//
 // Allows sub-metrics to have own and parent labels, and override parent labels.
 func mergeLabels(parent, child map[string]string) map[string]string {
 	if parent == nil && child == nil {
@@ -65,6 +63,7 @@ func getLabelValues(fields []string, labels []config.DynamicLabel) []string {
 	return values
 }
 
+// toPrometheusValueType converts metric type string into a Prometheus ValueType.
 func toPrometheusValueType(metricType string) (prometheus.ValueType, error) {
 	switch metricType {
 	case "gauge":
@@ -76,7 +75,8 @@ func toPrometheusValueType(metricType string) (prometheus.ValueType, error) {
 	}
 }
 
-func (c *Collector) matchPattern(line, match, metricName string) (bool, error) {
+// matchPattern checks if line matches provided regex pattern.
+func (c *Collector) matchPattern(line, match string) (bool, error) {
 	if match == "" {
 		return true, nil
 	}
