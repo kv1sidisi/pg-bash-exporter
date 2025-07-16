@@ -6,6 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"log/slog"
 	"pg-bash-exporter/internal/config"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -202,6 +203,19 @@ func (c *Collector) collectSimpleMetric(ch chan<- prometheus.Metric, metricConfi
 	c.logger.Debug("metric collected successfully", "metric", metricConfig.Name)
 }
 
+func (c *Collector) matchPattern(line, match, metricName string) bool {
+	if match == "" {
+		return true
+	}
+	matched, err := regexp.MatchString(match, line)
+	if err != nil {
+		c.logger.Error("invalid regex patterin in sub-metric", "metric", metricName, "pattern", match, "error", err)
+		return false
+	}
+
+	return matched
+}
+
 // collectComplicatedMetric handles metric group defined with sub-metrics section.
 // It runs one command and parses each line of the output to sub-metrics metrics.
 func (c *Collector) collectComplicatedMetric(ch chan<- prometheus.Metric, metricConfig config.Metric) {
@@ -226,6 +240,11 @@ func (c *Collector) collectComplicatedMetric(ch chan<- prometheus.Metric, metric
 		}
 
 		for _, subMetric := range metricConfig.SubMetrics {
+
+			if !c.matchPattern(line, subMetric.Match, subMetric.Name) {
+				continue
+			}
+
 			if subMetric.Field >= len(fields) {
 				c.logger.Error("sub-metric`s field index out of range of command output fields", "sub-metric", subMetric.Name, "field_index", subMetric.Field, "line", line)
 				continue
