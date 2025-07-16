@@ -12,7 +12,8 @@ import (
 // returns command output split into lines.
 // returns error if command fails to execute.
 func (c *Collector) getCommandOutput(metricConfig config.Metric) ([]string, error) {
-	val, err, ok := c.cache.Get(metricConfig.Command)
+	cacheKey := generateCacheKey(metricConfig.Name, metricConfig.Command)
+	val, err, ok := c.cache.Get(cacheKey)
 
 	ttl := c.config.Global.CacheTTL
 	if metricConfig.CacheTTL > config.DefaultCacheTTL {
@@ -32,7 +33,7 @@ func (c *Collector) getCommandOutput(metricConfig config.Metric) ([]string, erro
 
 	out, err := c.executor.ExecuteCommand(context.Background(), metricConfig.Command, timeout)
 
-	c.cache.Set(metricConfig.Command, out, err, ttl)
+	c.cache.Set(cacheKey, out, err, ttl)
 
 	if err != nil {
 		return nil, err
