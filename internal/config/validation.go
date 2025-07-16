@@ -77,15 +77,15 @@ func (l *Logging) validate() error {
 func (g *Global) validate() error {
 	var errs []error
 
-	if g.Timeout <= 0 {
+	if g.Timeout < 0 {
 		errs = append(errs, errors.New("global.timeout must be > 0 (10s)"))
 	}
 
-	if g.CacheTTL <= 0 {
+	if g.CacheTTL < 0 {
 		errs = append(errs, errors.New("global.cache_ttl must be > 0 (5m)"))
 	}
 
-	if g.MaxConcurrent <= 0 {
+	if g.MaxConcurrent < 0 {
 		errs = append(errs, errors.New("global.max_concurrent must be > 0"))
 	}
 
