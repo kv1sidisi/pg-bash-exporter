@@ -9,6 +9,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	DefaultTimeout       = 30 * time.Second
+	DefaultCacheTTL      = 3 * time.Second
+	DefaultMaxConcurrent = 10
+)
+
 var configPathFlag string
 
 // init sets flags with package initialization
@@ -31,13 +37,13 @@ func GetPath() string {
 
 func (c *Config) applyDefaults() {
 	if c.Global.Timeout == 0 {
-		c.Global.Timeout = 30 * time.Second
+		c.Global.Timeout = DefaultTimeout
 	}
 	if c.Global.CacheTTL == 0 {
-		c.Global.CacheTTL = 3 * time.Second
+		c.Global.CacheTTL = DefaultCacheTTL
 	}
 	if c.Global.MaxConcurrent == 0 {
-		c.Global.MaxConcurrent = 10
+		c.Global.MaxConcurrent = DefaultMaxConcurrent
 	}
 }
 
