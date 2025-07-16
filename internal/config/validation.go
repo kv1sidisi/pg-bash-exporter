@@ -97,6 +97,8 @@ func (m *Metric) validate() error {
 
 	if m.Name == "" {
 		errs = append(errs, errors.New("name is required"))
+	} else if !metricRegex.MatchString(m.Name) {
+		errs = append(errs, errors.New("metric name is not valid"))
 	}
 
 	if m.Help == "" {
@@ -149,6 +151,8 @@ func (sm *SubMetric) validate() error {
 
 	if sm.Name == "" {
 		errs = append(errs, errors.New("name is required"))
+	} else if !metricRegex.MatchString(sm.Name) {
+		errs = append(errs, errors.New("sub-metric name is not valid"))
 	}
 
 	if sm.Help == "" {
