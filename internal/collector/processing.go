@@ -2,6 +2,7 @@ package collector
 
 import (
 	"context"
+	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"pg-bash-exporter/internal/config"
 	"strconv"
@@ -12,6 +13,10 @@ import (
 // returns command output split into lines.
 // returns error if command fails to execute.
 func (c *Collector) getCommandOutput(metricConfig config.Metric) ([]string, error) {
+	if isCommandBlacklisted(metricConfig, c.config.Global) {
+		return nil, fmt.Errorf("command '%s' for metric '%s' is in black list", metricConfig.Command, metricConfig.Name)
+	}
+
 	cacheKey := generateCacheKey(metricConfig.Name, metricConfig.Command)
 	val, err, ok := c.cache.Get(cacheKey)
 

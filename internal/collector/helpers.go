@@ -5,6 +5,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"pg-bash-exporter/internal/config"
 	"regexp"
+	"strings"
 )
 
 // mergeLabels creates a new map containing labels from parent and child metric.
@@ -86,6 +87,28 @@ func (c *Collector) matchPattern(line, match string) (bool, error) {
 	}
 
 	return matched, nil
+}
+
+// isCommandBlacklisted checks if command is restricted by blacklist.
+// metric can skip check by setting `ignore_blacklist: true` in config.
+func isCommandBlacklisted(metric config.Metric, globalConfig config.Global) bool {
+	if metric.IgnoreBlacklist {
+		return false
+	}
+
+	fields := strings.Fields(metric.Command)
+	if len(fields) == 0 {
+		return false
+	}
+	executable := fields[0]
+
+	for _, blacklistedCmd := range globalConfig.CommandBlacklist {
+		if executable == blacklistedCmd {
+			return true
+		}
+	}
+
+	return false
 }
 
 // generateCacheKey creates a unique key for caching.
