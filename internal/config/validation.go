@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 var (
@@ -192,6 +193,9 @@ func validateLabels(labels map[string]string) error {
 	for name, str := range labels {
 		if !metricRegex.MatchString(name) {
 			errs = append(errs, fmt.Errorf("label name %s is not valid", name))
+		}
+		if strings.HasPrefix(name, "__") {
+			errs = append(errs, fmt.Errorf("label name '%s' must not start with '__'", name))
 		}
 		if str == "" {
 			errs = append(errs, fmt.Errorf("label %s requires value", name))
