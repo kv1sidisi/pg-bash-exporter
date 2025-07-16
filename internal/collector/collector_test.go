@@ -324,6 +324,73 @@ connections{type="udp"} 25
 filter_metric_filtered_sub 100
 `,
 		},
+		{
+			name: "blacklisted command",
+			config: &config.Config{
+				Metrics: []config.Metric{
+					{
+						Name:    "blacklisted_metric",
+						Help:    "command should be blocked.",
+						Type:    "gauge",
+						Command: "rm -rf /",
+					},
+				},
+				Global: config.Global{
+					CommandBlacklist: []string{"rm"},
+				},
+			},
+			executor:       &mockExecutor{},
+			expectedMetric: ``,
+		},
+		{
+			name: "blacklisted command with ignore flag",
+			config: &config.Config{
+				Metrics: []config.Metric{
+					{
+						Name:            "ignored_blacklist_metric",
+						Help:            "command should be allowed.",
+						Type:            "gauge",
+						Command:         "rm -rf /safe",
+						IgnoreBlacklist: true,
+					},
+				},
+				Global: config.Global{
+					CommandBlacklist: []string{"rm"},
+				},
+			},
+			executor: &mockExecutor{
+				output: "1",
+			},
+			expectedMetric: `
+# HELP ignored_blacklist_metric command should be allowed.
+# TYPE ignored_blacklist_metric gauge
+ignored_blacklist_metric 1
+`,
+		},
+		{
+			name: "command with blacklisted word in command argmnts",
+			config: &config.Config{
+				Metrics: []config.Metric{
+					{
+						Name:    "not_blacklisted_metric",
+						Help:    "command should be allowed.",
+						Type:    "gauge",
+						Command: "echo \"fake rm\"",
+					},
+				},
+				Global: config.Global{
+					CommandBlacklist: []string{"rm"},
+				},
+			},
+			executor: &mockExecutor{
+				output: "1",
+			},
+			expectedMetric: `
+# HELP not_blacklisted_metric command should be allowed.
+# TYPE not_blacklisted_metric gauge
+not_blacklisted_metric 1
+`,
+		},
 	}
 
 	for _, tc := range testCases {
