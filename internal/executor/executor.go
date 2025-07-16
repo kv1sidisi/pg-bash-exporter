@@ -12,6 +12,8 @@ import (
 
 type BashExecutor struct{}
 
+// ExecuteCommand executes shell command with timeout control.
+// returns command stout or stderr on failure.
 func (e *BashExecutor) ExecuteCommand(ctx context.Context, command string, timeout time.Duration) (string, error) {
 	if timeout > 0 {
 		var cancel context.CancelFunc
