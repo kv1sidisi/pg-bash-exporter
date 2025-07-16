@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"pg-bash-exporter/internal/cache"
 	"pg-bash-exporter/internal/config"
+	"sync"
 	"time"
 )
 
@@ -67,13 +68,34 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	c.logger.Info("Metrics collection started")
 
-	for _, metricConfig := range c.config.Metrics {
-		if len(metricConfig.SubMetrics) == 0 {
-			c.collectSimpleMetric(ch, metricConfig)
-		} else {
-			c.collectComplicatedMetric(ch, metricConfig)
-		}
+	wg := sync.WaitGroup{}
+
+	maxConcurrent := c.config.Global.MaxConcurrent
+	if maxConcurrent <= 0 {
+		maxConcurrent = config.DefaultMaxConcurrent
 	}
+	smph := make(chan struct{}, maxConcurrent)
+
+	for _, metricConfig := range c.config.Metrics {
+		wg.Add(1)
+
+		go func(mc config.Metric) {
+			defer wg.Done()
+
+			smph <- struct{}{}
+			defer func() {
+				<-smph
+			}()
+
+			if len(mc.SubMetrics) == 0 {
+				c.collectSimpleMetric(ch, mc)
+			} else {
+				c.collectComplicatedMetric(ch, mc)
+			}
+		}(metricConfig)
+	}
+
+	wg.Wait()
 
 	c.logger.Info("Metrics collection finished")
 }
