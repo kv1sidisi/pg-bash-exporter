@@ -159,6 +159,55 @@ dynamic_labels_metric_dynamic_sub_metric{my_label="label_val2"} 20
 `,
 		},
 		{
+			name: "sub-metric with pattern match",
+			config: &config.Config{
+				Metrics: []config.Metric{
+					{
+						Name:    "matched_metric",
+						Help:    "metric with matched sub-metrics.",
+						Command: "echo -e 'CPU label1 100\\MEM label2 200'",
+						SubMetrics: []config.SubMetric{
+							{
+								Name:  "cpu",
+								Help:  "Metric for cpu.",
+								Type:  "gauge",
+								Field: 2,
+								Match: "^CPU",
+								DynamicLabels: []config.DynamicLabel{
+									{Name: "label_name", Field: 1},
+								},
+							},
+							{
+								Name:  "mem",
+								Help:  "Metric for mem.",
+								Type:  "gauge",
+								Field: 2,
+								Match: "^MEM",
+								DynamicLabels: []config.DynamicLabel{
+									{Name: "label_name", Field: 1},
+								},
+							},
+						},
+					},
+				},
+				Global: config.Global{
+					Timeout: 0,
+				},
+			},
+			executor: &mockExecutor{
+				output: "CPU label1 100\nMEM label2 200",
+				err:    nil,
+			},
+			expectedMetric: `
+# HELP matched_metric_cpu Metric for cpu.
+# TYPE matched_metric_cpu gauge
+matched_metric_cpu{label_name="label1"} 100
+# HELP matched_metric_mem Metric for mem.
+# TYPE matched_metric_mem gauge
+matched_metric_mem{label_name="label2"} 200
+`,
+		},
+		{
 			name: "command timeout",
 			config: &config.Config{
 				Metrics: []config.Metric{
