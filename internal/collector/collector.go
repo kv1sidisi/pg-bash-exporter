@@ -74,7 +74,6 @@ func (c *Collector) ReloadConfig() error {
 	var newCfg config.Config
 
 	if err := config.Load(c.configPath, &newCfg); err != nil {
-		c.logger.Error("failed to reload config", "error", err)
 		return err
 	}
 
