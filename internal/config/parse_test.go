@@ -165,6 +165,261 @@ metrics:
 			wantErr:       true,
 			expectedError: "dynamic_label name: 1_invalid_label is not valid",
 		},
+		{
+			name: "invalid metrics path",
+			yaml: `
+server:
+  listen_address: ":1234"
+  metrics_path: "metrics"
+logging:
+  level: "info"
+global:
+  timeout: "1s"
+metrics:
+  - name: "my_metric"
+    help: "help"
+    type: "gauge"
+    command: "echo 1"
+`,
+			wantErr:       true,
+			expectedError: "server.metrics_path must start with '/'",
+		},
+		{
+			name: "invalid logging level",
+			yaml: `
+server:
+  listen_address: ":1234"
+  metrics_path: "/metrics"
+logging:
+  level: "warning"
+global:
+  timeout: "1s"
+metrics:
+  - name: "my_metric"
+    help: "help"
+    type: "gauge"
+    command: "echo 1"
+`,
+			wantErr:       true,
+			expectedError: "is not valid. Valid levels: info, debug, error",
+		},
+		{
+			name: "negative global timeout",
+			yaml: `
+server:
+  listen_address: ":1234"
+  metrics_path: "/metrics"
+logging:
+  level: "info"
+global:
+  timeout: "-5s"
+metrics:
+  - name: "my_metric"
+    help: "help"
+    type: "gauge"
+    command: "echo 1"
+`,
+			wantErr:       true,
+			expectedError: "global.timeout must be > 0",
+		},
+		{
+			name: "negative global cache_ttl",
+			yaml: `
+server:
+  listen_address: ":1234"
+  metrics_path: "/metrics"
+logging:
+  level: "info"
+global:
+  timeout: "1s"
+  cache_ttl: "-1m"
+metrics:
+  - name: "my_metric"
+    help: "help"
+    type: "gauge"
+    command: "echo 1"
+`,
+			wantErr:       true,
+			expectedError: "global.cache_ttl must be > 0",
+		},
+		{
+			name: "negative global max_concurrent",
+			yaml: `
+server:
+  listen_address: ":1234"
+  metrics_path: "/metrics"
+logging:
+  level: "info"
+global:
+  timeout: "1s"
+  max_concurrent: -5
+metrics:
+  - name: "my_metric"
+    help: "help"
+    type: "gauge"
+    command: "echo 1"
+`,
+			wantErr:       true,
+			expectedError: "global.max_concurrent must be > 0",
+		},
+		{
+			name: "metric with empty command",
+			yaml: `
+server:
+  listen_address: ":1234"
+  metrics_path: "/metrics"
+logging:
+  level: "info"
+global:
+  timeout: "1s"
+metrics:
+  - name: "my_metric"
+    help: "help"
+    type: "gauge"
+    command: ""
+`,
+			wantErr:       true,
+			expectedError: "command is required",
+		},
+		{
+			name: "metric with invalid static label name",
+			yaml: `
+server:
+  listen_address: ":1234"
+  metrics_path: "/metrics"
+logging:
+  level: "info"
+global:
+  timeout: "1s"
+metrics:
+  - name: "my_metric"
+    help: "help"
+    type: "gauge"
+    command: "echo 1"
+    labels:
+      "invalid-label": "value"
+`,
+			wantErr:       true,
+			expectedError: "label name invalid-label is not valid",
+		},
+		{
+			name: "metric with empty dynamic label name",
+			yaml: `
+server:
+  listen_address: ":1234"
+  metrics_path: "/metrics"
+logging:
+  level: "info"
+global:
+  timeout: "1s"
+metrics:
+  - name: "my_metric"
+    help: "help"
+    type: "gauge"
+    command: "echo 1"
+    dynamic_labels:
+      - name: ""
+        field: 0
+`,
+			wantErr:       true,
+			expectedError: "dynamic_label name is required",
+		},
+		{
+			name: "sub-metric with invalid name",
+			yaml: `
+server:
+  listen_address: ":1234"
+  metrics_path: "/metrics"
+logging:
+  level: "info"
+global:
+  timeout: "1s"
+metrics:
+  - name: "my_metric"
+    help: "help"
+    type: "gauge"
+    command: "echo 1"
+    sub_metrics:
+      - name: "invalid-sub-metric"
+        help: "help"
+        type: "gauge"
+        field: 0
+`,
+			wantErr:       true,
+			expectedError: "sub-metric name is not valid",
+		},
+		{
+			name: "sub-metric with empty help",
+			yaml: `
+server:
+  listen_address: ":1234"
+  metrics_path: "/metrics"
+logging:
+  level: "info"
+global:
+  timeout: "1s"
+metrics:
+  - name: "my_metric"
+    help: "help"
+    type: "gauge"
+    command: "echo 1"
+    sub_metrics:
+      - name: "my_sub"
+        help: ""
+        type: "gauge"
+        field: 0
+`,
+			wantErr:       true,
+			expectedError: "help string is required",
+		},
+		{
+			name: "sub-metric with invalid type",
+			yaml: `
+server:
+  listen_address: ":1234"
+  metrics_path: "/metrics"
+logging:
+  level: "info"
+global:
+  timeout: "1s"
+metrics:
+  - name: "my_metric"
+    help: "help"
+    type: "gauge"
+    command: "echo 1"
+    sub_metrics:
+      - name: "my_sub"
+        help: "a sub metric"
+        type: "bad_type"
+        field: 0
+`,
+			wantErr:       true,
+			expectedError: "type is invalid. valid: gauge, counter",
+		},
+		{
+			name: "sub-metric with negative field",
+			yaml: `
+server:
+  listen_address: ":1234"
+  metrics_path: "/metrics"
+logging:
+  level: "info"
+global:
+  timeout: "1s"
+metrics:
+  - name: "my_metric"
+    help: "help"
+    type: "gauge"
+    command: "echo 1"
+    sub_metrics:
+      - name: "my_sub"
+        help: "a sub metric"
+        type: "gauge"
+        field: -1
+`,
+			wantErr:       true,
+			expectedError: "field must be >= 0",
+		},
 	}
 
 	for _, tc := range testCases {
