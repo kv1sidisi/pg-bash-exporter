@@ -46,6 +46,7 @@ type SubMetric struct {
 	Help          string            `yaml:"help"`
 	Type          string            `yaml:"type"`
 	Field         int               `yaml:"field"`
+	Match         string            `yaml:"match,omitempty"`
 	Labels        map[string]string `yaml:"labels,omitempty"`
 	DynamicLabels []DynamicLabel    `yaml:"dynamic_labels,omitempty"`
 }
