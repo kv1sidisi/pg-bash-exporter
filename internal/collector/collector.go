@@ -90,10 +90,12 @@ func getLabelValues(fields []string, labels []config.DynamicLabel) []string {
 func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	for _, metricConfig := range c.config.Metrics {
 		if len(metricConfig.SubMetrics) == 0 {
+			dynLblNames := getLabelNames(metricConfig.DynamicLabels)
+
 			desc := prometheus.NewDesc(
 				metricConfig.Name,
 				metricConfig.Help,
-				nil,
+				dynLblNames,
 				metricConfig.Labels)
 
 			ch <- desc
