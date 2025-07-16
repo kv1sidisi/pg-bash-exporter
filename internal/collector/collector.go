@@ -15,22 +15,29 @@ type Executor interface {
 }
 
 type Collector struct {
-	config   *config.Config
-	logger   *slog.Logger
-	executor Executor
-	cache    *cache.Cache
+	config     *config.Config
+	logger     *slog.Logger
+	executor   Executor
+	cache      *cache.Cache
+	configPath string
+
+	mu sync.RWMutex
 }
 
-func NewCollector(cfg *config.Config, logger *slog.Logger, exec Executor, cache *cache.Cache) *Collector {
+func NewCollector(cfg *config.Config, logger *slog.Logger, exec Executor, cache *cache.Cache, configPath string) *Collector {
 	return &Collector{
-		config:   cfg,
-		logger:   logger,
-		executor: exec,
-		cache:    cache,
+		config:     cfg,
+		logger:     logger,
+		executor:   exec,
+		cache:      cache,
+		configPath: configPath,
 	}
 }
 
 func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
 	for _, metricConfig := range c.config.Metrics {
 		if len(metricConfig.SubMetrics) == 0 {
 			dynLblNames := getLabelNames(metricConfig.DynamicLabels)
@@ -65,7 +72,27 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 
 }
 
+func (c *Collector) ReloadConfig() error {
+	var newCfg config.Config
+
+	if err := config.Load(c.configPath, &newCfg); err != nil {
+		c.logger.Error("failed to reload config", "error", err)
+		return err
+	}
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.config = &newCfg
+
+	c.logger.Info("config reloaded successfully")
+	return nil
+}
+
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
 	start := time.Now()
 
 	defer func() {

@@ -6,6 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"io"
 	"log/slog"
+	"os"
 	"pg-bash-exporter/internal/cache"
 	"pg-bash-exporter/internal/config"
 	"strings"
@@ -238,7 +239,7 @@ matched_metric_mem{label_name="label2"} 200
 						Name:    "connections",
 						Help:    "number of connetions.",
 						Type:    "gauge",
-						Command: "echo -e 'tcp 150\nudp 25",
+						Command: "echo -e 'tcp 150\nudp 25'",
 						Field:   1,
 						DynamicLabels: []config.DynamicLabel{
 							{Name: "type", Field: 0},
@@ -396,7 +397,7 @@ not_blacklisted_metric 1
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			logger := slog.New(slog.NewJSONHandler(io.Discard, nil))
-			collector := NewCollector(tc.config, logger, tc.executor, cache.New())
+			collector := NewCollector(tc.config, logger, tc.executor, cache.New(), "")
 			reg := prometheus.NewRegistry()
 			reg.MustRegister(collector)
 
@@ -610,7 +611,7 @@ func TestInternalMetrics(t *testing.T) {
 		err: errors.New("error"),
 	}
 
-	collector := NewCollector(cfg, logger, executor, cache)
+	collector := NewCollector(cfg, logger, executor, cache, "")
 
 	ch := make(chan prometheus.Metric, 10)
 	go func() {
@@ -647,5 +648,73 @@ func TestInternalMetrics(t *testing.T) {
 
 	if val := testutil.ToFloat64(CacheMisses) - missesBefore; val != 2 {
 		t.Errorf("CacheMisses: wnted 2, got %v", val)
+	}
+}
+
+func TestReloadConfig(t *testing.T) {
+	logger := slog.New(slog.NewJSONHandler(io.Discard, nil))
+
+	configV1 := `
+server:
+  listen_address: ":8080"
+  metrics_path: "/metrics"
+logging:
+  level: "info"
+metrics:
+  - name: "metric_v1"
+    help: "help v1"
+    type: "gauge"
+    command: "echo 1"
+`
+	configV2 := `
+server:
+  listen_address: ":8080"
+  metrics_path: "/metrics"
+logging:
+  level: "info"
+metrics:
+  - name: "metric_v2"
+    help: "help v2"
+    type: "counter"
+    command: "echo 2"
+`
+
+	tmpfile, err := os.CreateTemp(t.TempDir(), "test-config-*.yaml")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpfile.Name())
+
+	if _, err := tmpfile.Write([]byte(configV1)); err != nil {
+		t.Fatalf("failed to write v1 config: %v", err)
+	}
+
+	var cfg config.Config
+	if err := config.Load(tmpfile.Name(), &cfg); err != nil {
+		t.Fatalf("failed to load v1 config: %v", err)
+	}
+
+	collector := NewCollector(&cfg, logger, &mockExecutor{}, cache.New(), tmpfile.Name())
+
+	if collector.config.Metrics[0].Name != "metric_v1" {
+		t.Fatalf("expected initial metric to be metric_v1, got %s", collector.config.Metrics[0].Name)
+	}
+
+	if err := os.WriteFile(tmpfile.Name(), []byte(configV2), 0644); err != nil {
+		t.Fatalf("failed to write v2 config: %v", err)
+	}
+
+	if err := collector.ReloadConfig(); err != nil {
+		t.Fatalf("reload failed: %v", err)
+	}
+
+	if len(collector.config.Metrics) != 1 {
+		t.Fatalf("expected 1 metric after reload, got %d", len(collector.config.Metrics))
+	}
+	if collector.config.Metrics[0].Name != "metric_v2" {
+		t.Errorf("expected metric_v2 after reload, got %s", collector.config.Metrics[0].Name)
+	}
+	if collector.config.Metrics[0].Type != "counter" {
+		t.Errorf("expected counter type after reload, got %s", collector.config.Metrics[0].Type)
 	}
 }
