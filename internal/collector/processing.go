@@ -94,7 +94,6 @@ func (c *Collector) collectSimpleMetric(ch chan<- prometheus.Metric, metricConfi
 		}
 		ch <- metric
 	}
-	c.logger.Debug("metric collected successfully", "metric", metricConfig.Name)
 }
 
 // collectComplicatedMetric handles metric group defined with sub-metrics section.
@@ -153,7 +152,6 @@ func (c *Collector) collectComplicatedMetric(ch chan<- prometheus.Metric, metric
 				continue
 			}
 			ch <- metric
-			c.logger.Debug("sub-metric collected successfully", "sub-metric", subMetric.Name)
 		}
 	}
 }
