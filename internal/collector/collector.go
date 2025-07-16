@@ -66,7 +66,6 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 				labels,
 			)
 			ch <- desc
-			c.logger.Debug("sub-metric description added", "sub-metric", subMetric.Name)
 		}
 	}
 
