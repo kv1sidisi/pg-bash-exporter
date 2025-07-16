@@ -180,6 +180,36 @@ dynamic_labels_metric_dynamic_sub_metric{my_label="label_val2"} 20
 			},
 			expectedMetric: ``,
 		},
+		{
+			name: "simple metric with dynamic labels and multi-line output",
+			config: &config.Config{
+				Metrics: []config.Metric{
+					{
+						Name:    "connections",
+						Help:    "number of connetions.",
+						Type:    "gauge",
+						Command: "echo -e 'tcp 150\nnudp 25",
+						Field:   1,
+						DynamicLabels: []config.DynamicLabel{
+							{Name: "type", Field: 0},
+						},
+					},
+				},
+				Global: config.Global{
+					Timeout: 0,
+				},
+			},
+			executor: &mockExecutor{
+				output: "tcp 150\nudp 25",
+				err:    nil,
+			},
+			expectedMetric: `
+# HELP connections number of connetions.
+# TYPE connections gauge
+connections{type="tcp"} 150
+connections{type="udp"} 25
+`,
+		},
 	}
 
 	for _, tc := range testCases {
