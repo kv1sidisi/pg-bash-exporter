@@ -160,28 +160,45 @@ func (c *Collector) collectSimpleMetric(ch chan<- prometheus.Metric, metricConfi
 		return
 	}
 
-	result, err := strconv.ParseFloat(out, 64)
-	if err != nil {
-		c.logger.Error("failed to parse command output", "metric", metricConfig.Name, "error", err)
-		return
-	}
+	lines := strings.Split(strings.TrimSpace(out), "\n")
 
-	valueType, err := toPrometheusValueType(metricConfig.Type)
-	if err != nil {
-		c.logger.Error(err.Error(), "metric", metricConfig.Name)
-		return
-	}
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
+		}
+		if metricConfig.Field >= len(fields) {
+			c.logger.Error("metric`s field index out of range of command output fields", "metric", metricConfig.Name, "field_index", metricConfig.Field, "line", line)
+			continue
+		}
 
-	metric, err := prometheus.NewConstMetric(
-		prometheus.NewDesc(metricConfig.Name, metricConfig.Help, nil, metricConfig.Labels),
-		valueType,
-		result)
-	if err != nil {
-		c.logger.Error("failed to create metric", "metric", metricConfig.Name, "error", err)
-		return
-	}
-	ch <- metric
+		val, err := strconv.ParseFloat(fields[metricConfig.Field], 64)
+		if err != nil {
+			c.logger.Error("failed to parse field for metric", "metric", metricConfig.Name, "value", fields[metricConfig.Field], "error", err)
+			continue
+		}
 
+		valueType, err := toPrometheusValueType(metricConfig.Type)
+		if err != nil {
+			c.logger.Error(err.Error(), "metric", metricConfig.Name)
+			return
+		}
+
+		dynLblNames := getLabelNames(metricConfig.DynamicLabels)
+		dynLblValues := getLabelValues(fields, metricConfig.DynamicLabels)
+
+		metric, err := prometheus.NewConstMetric(
+			prometheus.NewDesc(metricConfig.Name, metricConfig.Help, dynLblNames, metricConfig.Labels),
+			valueType,
+			val,
+			dynLblValues...,
+		)
+		if err != nil {
+			c.logger.Error("failed to create sub-metric", "sub-metric", metricConfig.Name, "error", err)
+			continue
+		}
+		ch <- metric
+	}
 	c.logger.Debug("metric collected successfully", "metric", metricConfig.Name)
 }
 
@@ -221,7 +238,7 @@ func (c *Collector) collectComplicatedMetric(ch chan<- prometheus.Metric, metric
 
 			valueType, err := toPrometheusValueType(subMetric.Type)
 			if err != nil {
-				c.logger.Error(err.Error(), "metric", subMetric.Name)
+				c.logger.Error(err.Error(), "sub-metric", subMetric.Name)
 				return
 			}
 			labels := mergeLabels(metricConfig.Labels, subMetric.Labels)
