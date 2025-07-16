@@ -111,6 +111,26 @@ func (m *Metric) validate() error {
 		errs = append(errs, errors.New("command is required"))
 	}
 
+	if m.Field < 0 {
+		errs = append(errs, errors.New("field must be >= 0"))
+	}
+
+	if err := validateLabels(m.Labels); err != nil {
+		errs = append(errs, err)
+	}
+
+	for _, dynLbl := range m.DynamicLabels {
+		if dynLbl.Name == "" {
+			errs = append(errs, errors.New("dynamic_label name is required"))
+		}
+		if !metricRegex.MatchString(dynLbl.Name) {
+			errs = append(errs, fmt.Errorf("dynamic_label name: %s is not valid", dynLbl.Name))
+		}
+		if dynLbl.Field < 0 {
+			errs = append(errs, fmt.Errorf("dynamic_label name: %s, field must be >= 0", dynLbl.Name))
+		}
+	}
+
 	if err := validateLabels(m.Labels); err != nil {
 		errs = append(errs, err)
 	}
