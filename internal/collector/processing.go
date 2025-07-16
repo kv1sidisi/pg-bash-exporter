@@ -89,7 +89,7 @@ func (c *Collector) collectComplicatedMetric(ch chan<- prometheus.Metric, metric
 		}
 
 		for _, subMetric := range metricConfig.SubMetrics {
-			if matched, err := c.matchPattern(line, subMetric.Match, subMetric.Name); !matched {
+			if matched, err := c.matchPattern(line, subMetric.Match); !matched {
 				c.logger.Error("invalid regex patterin in sub-metric", "sub-metric", subMetric.Name, "pattern", subMetric.Match, "error", err)
 				continue
 			}
