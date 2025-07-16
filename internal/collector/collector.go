@@ -49,7 +49,6 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 				metricConfig.Labels)
 
 			ch <- desc
-			c.logger.Debug("simple metric description added", "metric", metricConfig.Name)
 			continue
 		}
 		for _, subMetric := range metricConfig.SubMetrics {
@@ -68,7 +67,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 			ch <- desc
 		}
 	}
-
+	c.logger.Debug("metric description reading ended")
 }
 
 func (c *Collector) ReloadConfig() error {
