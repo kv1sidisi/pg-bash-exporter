@@ -259,6 +259,70 @@ connections{type="tcp"} 150
 connections{type="udp"} 25
 `,
 		},
+		{
+			name: "value parsing failure",
+			config: &config.Config{
+				Metrics: []config.Metric{
+					{
+						Name:    "parse_fail_metric",
+						Help:    "metric that fails to parse.",
+						Type:    "gauge",
+						Command: "echo 'not_number'",
+					},
+				},
+			},
+			executor: &mockExecutor{
+				output: "not_number",
+			},
+			expectedMetric: ``,
+		},
+		{
+			name: "field index out of range",
+			config: &config.Config{
+				Metrics: []config.Metric{
+					{
+						Name:    "index_metric",
+						Help:    "metric where field index is out of range.",
+						Type:    "gauge",
+						Command: "echo 'one_value'",
+						Field:   1,
+					},
+				},
+			},
+			executor: &mockExecutor{
+				output: "one_value",
+			},
+			expectedMetric: ``,
+		},
+		{
+			name: "sub-metric with no matching pattern",
+			config: &config.Config{
+				Metrics: []config.Metric{
+					{
+						Name:    "filter_metric",
+						Help:    "metric with a sub-metric that filters lines.",
+						Command: "echo -e 'matched_line 100\nunmatched_line 200'",
+						SubMetrics: []config.SubMetric{
+							{
+								Name:  "filtered_sub",
+								Help:  "created for matched lines.",
+								Type:  "gauge",
+								Field: 1,
+								Match: "^matched_line",
+							},
+						},
+					},
+				},
+			},
+			executor: &mockExecutor{
+				output: "matched_line 100\nunmatched_line 200",
+			},
+			expectedMetric: `
+# HELP filter_metric_filtered_sub created for matched lines.
+# TYPE filter_metric_filtered_sub gauge
+filter_metric_filtered_sub 100
+`,
+		},
 	}
 
 	for _, tc := range testCases {
