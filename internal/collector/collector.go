@@ -98,7 +98,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 	Checks.Inc()
 
-	c.logger.Info("Metrics collection started")
+	c.logger.Debug("Metrics collection started")
 
 	wg := sync.WaitGroup{}
 
@@ -129,5 +129,5 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 
 	wg.Wait()
 
-	c.logger.Info("Metrics collection finished")
+	c.logger.Debug("Metrics collection finished")
 }
