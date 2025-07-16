@@ -59,10 +59,16 @@ func main() {
 
 	exec := &executor.BashExecutor{}
 
-	collector := collector.NewCollector(&cfg, slog.Default(), exec, cache)
+	metricsCollector := collector.NewCollector(&cfg, slog.Default(), exec, cache)
 
 	registry := prometheus.NewRegistry()
-	registry.MustRegister(collector)
+	registry.MustRegister(metricsCollector)
+
+	registry.MustRegister(collector.Checks)
+	registry.MustRegister(collector.CheckDuration)
+	registry.MustRegister(collector.CommandErrors)
+	registry.MustRegister(collector.CacheHits)
+	registry.MustRegister(collector.CacheMisses)
 
 	mux := http.NewServeMux()
 	mux.Handle(cfg.Server.MetricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))

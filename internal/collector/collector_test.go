@@ -238,7 +238,7 @@ matched_metric_mem{label_name="label2"} 200
 						Name:    "connections",
 						Help:    "number of connetions.",
 						Type:    "gauge",
-						Command: "echo -e 'tcp 150\nnudp 25",
+						Command: "echo -e 'tcp 150\nudp 25",
 						Field:   1,
 						DynamicLabels: []config.DynamicLabel{
 							{Name: "type", Field: 0},
@@ -592,5 +592,60 @@ func TestToPrometheusValueType(t *testing.T) {
 				t.Errorf("expected type %v, but got %v", tc.expectedType, valueType)
 			}
 		})
+	}
+}
+
+func TestInternalMetrics(t *testing.T) {
+	logger := slog.New(slog.NewJSONHandler(io.Discard, nil))
+	cache := cache.New()
+
+	cfg := &config.Config{
+		Metrics: []config.Metric{
+			{Name: "ok_metric", Command: "echo 1", CacheTTL: 1 * time.Minute},
+			{Name: "err_metric", Command: "exit 1"},
+		},
+	}
+
+	executor := &mockExecutor{
+		err: errors.New("error"),
+	}
+
+	collector := NewCollector(cfg, logger, executor, cache)
+
+	ch := make(chan prometheus.Metric, 10)
+	go func() {
+		for range ch {
+		}
+	}()
+
+	checksBefore := testutil.ToFloat64(Checks)
+	errorsOkBefore := testutil.ToFloat64(CommandErrors.WithLabelValues("ok_metric"))
+	errorsErrBefore := testutil.ToFloat64(CommandErrors.WithLabelValues("err_metric"))
+	hitsBefore := testutil.ToFloat64(CacheHits)
+	missesBefore := testutil.ToFloat64(CacheMisses)
+
+	collector.Collect(ch)
+	collector.Collect(ch)
+
+	close(ch)
+
+	if val := testutil.ToFloat64(Checks) - checksBefore; val != 2 {
+		t.Errorf("Checks: wanted 2, got %v", val)
+	}
+
+	if val := testutil.ToFloat64(CommandErrors.WithLabelValues("err_metric")) - errorsErrBefore; val != 1 {
+		t.Errorf("CommandErrors for err_metric: wanted 1, got %v", val)
+	}
+
+	if val := testutil.ToFloat64(CommandErrors.WithLabelValues("ok_metric")) - errorsOkBefore; val != 1 {
+		t.Errorf("ComandErrors for ok_metric: wanted 1, got %v", val)
+	}
+
+	if val := testutil.ToFloat64(CacheHits) - hitsBefore; val != 2 {
+		t.Errorf("CacheHits: wanted 2, got %v", val)
+	}
+
+	if val := testutil.ToFloat64(CacheMisses) - missesBefore; val != 2 {
+		t.Errorf("CacheMisses: wnted 2, got %v", val)
 	}
 }

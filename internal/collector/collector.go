@@ -66,6 +66,14 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
+	start := time.Now()
+
+	defer func() {
+		CheckDuration.Observe(time.Since(start).Seconds())
+	}()
+
+	Checks.Inc()
+
 	c.logger.Info("Metrics collection started")
 
 	wg := sync.WaitGroup{}

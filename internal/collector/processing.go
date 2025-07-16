@@ -26,9 +26,11 @@ func (c *Collector) getCommandOutput(metricConfig config.Metric) ([]string, erro
 	}
 
 	if ok {
+		CacheHits.Inc()
 		c.logger.Debug("cache taken", "command", metricConfig.Command)
 		return strings.Split(strings.TrimSpace(val), "\n"), err
 	}
+	CacheMisses.Inc()
 
 	timeout := c.config.Global.Timeout
 
@@ -41,6 +43,7 @@ func (c *Collector) getCommandOutput(metricConfig config.Metric) ([]string, erro
 	c.cache.Set(cacheKey, out, err, ttl)
 
 	if err != nil {
+		CommandErrors.WithLabelValues(metricConfig.Name).Inc()
 		return nil, err
 	}
 
