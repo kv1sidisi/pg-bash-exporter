@@ -37,6 +37,8 @@ type Metric struct {
 	SubMetrics        []SubMetric       `yaml:"sub_metrics,omitempty"`
 	ResourceIntensive bool              `yaml:"resource_intensive,omitempty"`
 	IgnoreBlacklist   bool              `yaml:"ignore_blacklist,omitempty"`
+	Field             int               `yaml:"field,omitempty"`
+	DynamicLabels     []DynamicLabel    `yaml:"dynamic_labels,omitempty"`
 }
 
 type SubMetric struct {
