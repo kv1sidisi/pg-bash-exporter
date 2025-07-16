@@ -124,6 +124,47 @@ metrics: []
 			wantErr:       true,
 			expectedError: "at least one metric must be defined",
 		},
+		{
+			name: "invalid metric name",
+			yaml: `
+server:
+  listen_address: ":1234"
+  metrics_path: "/metrics"
+logging:
+  level: "info"
+global:
+  timeout: "1s"
+metrics:
+  - name: "my-metric"
+    help: "help"
+    type: "gauge"
+    command: "echo 1"
+`,
+			wantErr:       true,
+			expectedError: "metric name is not valid",
+		},
+		{
+			name: "invalid dynamic label name",
+			yaml: `
+server:
+  listen_address: ":1234"
+  metrics_path: "/metrics"
+logging:
+  level: "info"
+global:
+  timeout: "1s"
+metrics:
+  - name: "my_metric"
+    help: "help"
+    type: "gauge"
+    command: "echo 1"
+    dynamic_labels:
+      - name: "1_invalid_label"
+        field: 0
+`,
+			wantErr:       true,
+			expectedError: "dynamic_label name: 1_invalid_label is not valid",
+		},
 	}
 
 	for _, tc := range testCases {
