@@ -32,7 +32,7 @@ func GetPath() string {
 		return envPath
 	}
 
-	return "configs/config.yaml"
+	return "configs/config.example.yaml"
 }
 
 func (c *Config) applyDefaults() {

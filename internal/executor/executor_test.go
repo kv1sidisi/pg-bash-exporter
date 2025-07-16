@@ -52,7 +52,7 @@ func TestExecuteCommand(t *testing.T) {
 			timeout:     50 * time.Millisecond,
 			context:     context.Background(),
 			wantErr:     true,
-			errContains: "command timed out",
+			errContains: "command execution failed due to context: context deadline exceeded",
 		},
 	}
 
