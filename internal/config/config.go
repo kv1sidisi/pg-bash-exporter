@@ -27,18 +27,17 @@ type Global struct {
 }
 
 type Metric struct {
-	Name              string            `yaml:"name"`
-	Help              string            `yaml:"help"`
-	Type              string            `yaml:"type"`
-	Command           string            `yaml:"command"`
-	Timeout           time.Duration     `yaml:"timeout,omitempty"`
-	CacheTTL          time.Duration     `yaml:"cache_ttl,omitempty"`
-	Labels            map[string]string `yaml:"labels,omitempty"`
-	SubMetrics        []SubMetric       `yaml:"sub_metrics,omitempty"`
-	ResourceIntensive bool              `yaml:"resource_intensive,omitempty"`
-	IgnoreBlacklist   bool              `yaml:"ignore_blacklist,omitempty"`
-	Field             int               `yaml:"field,omitempty"`
-	DynamicLabels     []DynamicLabel    `yaml:"dynamic_labels,omitempty"`
+	Name            string            `yaml:"name"`
+	Help            string            `yaml:"help"`
+	Type            string            `yaml:"type"`
+	Command         string            `yaml:"command"`
+	Timeout         time.Duration     `yaml:"timeout,omitempty"`
+	CacheTTL        time.Duration     `yaml:"cache_ttl,omitempty"`
+	Labels          map[string]string `yaml:"labels,omitempty"`
+	SubMetrics      []SubMetric       `yaml:"sub_metrics,omitempty"`
+	IgnoreBlacklist bool              `yaml:"ignore_blacklist,omitempty"`
+	Field           int               `yaml:"field,omitempty"`
+	DynamicLabels   []DynamicLabel    `yaml:"dynamic_labels,omitempty"`
 }
 
 type SubMetric struct {
