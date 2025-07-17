@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"io"
 	"log"
 	"log/slog"
 	"net/http"
