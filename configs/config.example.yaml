@@ -20,7 +20,7 @@ logging:
 
 global:
   # Default timeout for commands if not specified per-metric.
-  timeout: "15s"
+  timeout: "8s"
   # Default cache duration for command output if not specified per-metric.
   cache_ttl: "3m"
   # Maximum number of commands to run concurrently during a scrape.
