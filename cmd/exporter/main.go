@@ -73,6 +73,15 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle(cfg.Server.MetricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`<html>
+<head><title>PG-Bash Exporter</title></head>
+<body>
+<h1>PG-Bash Exporter</h1>
+<p><a href='` + cfg.Server.MetricsPath + `'>Metrics</a></p>
+</body>
+</html>`))
+	})
 	server := &http.Server{
 		Addr:    cfg.Server.ListenAddress,
 		Handler: mux,
