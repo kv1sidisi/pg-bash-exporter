@@ -82,6 +82,8 @@ func (c *Collector) ReloadConfig() error {
 
 	c.config = &newCfg
 
+	config.SetupLogger(newCfg.Logging)
+
 	c.logger.Info("config reloaded successfully")
 	return nil
 }
