@@ -1,0 +1,209 @@
+# ===================================================================
+# pg-bash-exporter: Example Configuration
+#
+# ===================================================================
+
+# -------------------------------------------------------------------
+# Section 1: Server and Global Settings
+# -------------------------------------------------------------------
+server:
+  # The address and port the server will listen on.
+  listen_address: "0.0.0.0:8080"
+  # The path where metrics will be exposed. Must start with '/'.
+  metrics_path: "/metrics"
+
+logging:
+  # Logging level. Valid options: "debug", "info", "error".
+  level: "debug"
+  # Path to the log file. If empty, logs are written to standard output.
+#  path: "exporter.log"
+
+global:
+  # Default timeout for commands if not specified per-metric.
+  timeout: "15s"
+  # Default cache duration for command output if not specified per-metric.
+  cache_ttl: "3m"
+  # Maximum number of commands to run concurrently during a scrape.
+  max_concurrent: 10
+  # A list of commands that are forbidden from being executed for security.
+  # This checks only the first word of the command (e.g., "rm").
+  command_blacklist:
+    - "rm"
+    - "shutdown"
+    - "reboot"
+    - "mkfs"
+    - "dd"
+    # We add 'echo' here for the blacklist demonstration below.
+    - "echo"
+
+# -------------------------------------------------------------------
+# Section 2: Metric Examples
+#
+# Best practice: It's recommended to include units in metric names,
+# for example: `_seconds`, `_bytes`, `_total`.
+# -------------------------------------------------------------------
+metrics:
+  # --- Example 1: A complex metric with multiple sub-metrics ---
+  # One command runs, and its output is used to generate several metrics.
+  - name: "system_load"
+    help: "System load average."
+    type: "gauge" # This type is a placeholder, as sub-metrics define their own.
+    command: "cat /proc/loadavg"
+    cache_ttl: "10s" # Override global cache TTL for this specific metric.
+    sub_metrics:
+      - name: "load_1m"
+        help: "1-minute load average."
+        type: "gauge"
+        field: 0 # Use the first field (0-indexed) from the output line.
+      - name: "load_5m"
+        help: "5-minute load average."
+        type: "gauge"
+        field: 1 # Use the second field.
+      - name: "load_15m"
+        help: "15-minute load average."
+        type: "gauge"
+        field: 2 # Use the third field.
+
+  # --- Example 2: Simple metric with multi-line output and dynamic labels ---
+  # This is required when a command returns multiple lines, and each line
+  # should become a separate time series. The dynamic labels make them unique.
+  - name: "disk_usage"
+    help: "Disk usage by filesystem and mountpoint."
+    type: "gauge"
+    # Get disk usage, skip the header line.
+    command: "df -B1 | tail -n +2"
+    cache_ttl: "5m"
+    # This metric will produce multiple results (one per line of `df` output).
+    # We need dynamic labels to distinguish them.
+    # Without them, Prometheus would report a "duplicate metrics" error.
+    sub_metrics:
+      - name: "total_bytes"
+        help: "Total disk space in bytes."
+        type: "gauge"
+        field: 1 # Column 2 is total space.
+        dynamic_labels:
+          - name: "filesystem"
+            field: 0 # Column 1 is the filesystem.
+          - name: "mountpoint"
+            field: 5 # Column 6 is the mount point.
+      - name: "used_bytes"
+        help: "Used disk space in bytes."
+        type: "gauge"
+        field: 2 # Column 3 is used space.
+        dynamic_labels:
+          - name: "filesystem"
+            field: 0
+          - name: "mountpoint"
+            field: 5
+
+  # --- Example 3: Counter metric ---
+  # Counters should only ever increase.
+  - name: "system_uptime_seconds"
+    help: "System uptime in seconds."
+    type: "counter" # Note the type.
+    command: "cat /proc/uptime | awk '{print $1}'"
+    cache_ttl: "5s"
+
+  # --- Example 4: Static labels and label overriding ---
+  # Demonstrates how static labels are applied and how sub-metrics can override them.
+  - name: "service_status"
+    help: "Status of various services."
+    type: "gauge"
+    # The 'echo' command is in the blacklist, so we must ignore it for this metric.
+    command: "echo 'nginx active 1' && echo 'postgres inactive 0' && echo 'redis active 1'"
+    ignore_blacklist: true
+    labels:
+      # This label will be applied to all sub-metrics unless overridden.
+      environment: "production"
+      region: "eu-central-1"
+    sub_metrics:
+      - name: "nginx"
+        help: "Status of the Nginx service."
+        type: "gauge"
+        match: "^nginx" # This sub-metric only applies to lines starting with "nginx".
+        field: 2
+        labels:
+          # We can add more specific labels here.
+          service_type: "web-server"
+      - name: "postgres"
+        help: "Status of the PostgreSQL service."
+        type: "gauge"
+        match: "^postgres"
+        field: 2
+        labels:
+          # This label OVERRIDES the parent's "environment" label for this sub-metric only.
+          environment: "staging"
+          service_type: "database"
+
+  # --- Example 5: Blacklist handling ---
+  # This example shows how to bypass the command blacklist for a specific metric.
+  - name: "allowed_echo_command"
+    help: "A command that is normally blacklisted but allowed here."
+    type: "gauge"
+    # The 'echo' command is in the global blacklist.
+    # By setting 'ignore_blacklist' to true, we can execute it.
+    # USE WITH EXTREME CAUTION.
+    command: "echo 42"
+    ignore_blacklist: true
+
+  # --- Example 6: A simple metric that does not have sub-metrics ---
+  # This is a very common use case for simple "gauge" metrics.
+  - name: "process_count"
+    help: "Total number of running processes."
+    type: "gauge"
+    command: "ps aux | wc -l"
+    timeout: "5s"
+
+  # --- Example 7: A simple metric with multi-line output ---
+  # It creates metrics from multi-line output using dynamic labels directly.
+  - name: "network_connections_by_state"
+    help: "Number of network connections by state."
+    type: "gauge"
+    command: "ss -ant | awk 'NR>1 {print $1}' | sort | uniq -c"
+    field: 0 # The value is in the first column (the count).
+    dynamic_labels:
+      - name: "state"
+        field: 1 # The label is in the second column (the state name).
+
+# -------------------------------------------------------------------
+# Section 3: Invalid or Problematic Configurations (Commented Out)
+# -------------------------------------------------------------------
+#
+#  # --- INVALID: Blacklisted Command ---
+#  # This metric would be blocked because "rm" is in the global command_blacklist
+#  # and ignore_blacklist is not set to true.
+#  - name: "this_will_be_blocked"
+#    help: "A metric that should never run."
+#    type: "gauge"
+#    command: "rm -rf /tmp/some_file"
+#
+#  # --- INVALID: Bad Metric Name ---
+#  # Metric names must match the regex ^[a-zA-Z_][a-zA-Z0-9_]*$
+#  - name: "invalid-metric-name"
+#    help: "This will fail validation."
+#    type: "gauge"
+#    command: "echo 1"
+#
+#  # --- INVALID: Bad Label Name ---
+#  # Label names must follow the same rules as metric names.
+#  - name: "metric_with_bad_label"
+#    help: "This will also fail validation."
+#    type: "gauge"
+#    command: "echo 1"
+#    labels:
+#      "invalid-label-name": "value"
+#
+#  # --- PROBLEM: Duplicate metric without dynamic labels ---
+#  # This configuration is valid, but will cause a runtime error from Prometheus.
+#  # The command returns two lines. The exporter will try to create two metrics
+#  # with the exact same name and label set: `process_count{}`.
+#  # This requires `dynamic_labels` to make them unique.
+#  - name: "process_count"
+#    help: "This will cause a runtime error."
+#    type: "gauge"
+#    command: "echo 'user1 150' && echo 'user2 300'"
+#    field: 1
+#    # FIX: Add dynamic labels to make the metrics unique
+#    # dynamic_labels:
+#    #  - name: "user"
+#    #    field: 0
