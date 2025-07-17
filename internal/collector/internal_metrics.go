@@ -21,7 +21,7 @@ var (
 
 func init() {
 	Checks = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "pg_bash_exporter_checks.",
+		Name: "pg_bash_exporter_checks_total",
 		Help: "Number of metrics checks.",
 	})
 
@@ -31,17 +31,17 @@ func init() {
 	})
 
 	CommandErrors = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "pg_bash_exporter_command_errors.",
+		Name: "pg_bash_exporter_command_errors_total",
 		Help: "Number of command errors.",
 	}, []string{"metric_name"})
 
 	CacheHits = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "pg_bash_exporter_cache_hits",
+		Name: "pg_bash_exporter_cache_hits_total",
 		Help: "Number of cache hits.",
 	})
 
 	CacheMisses = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "pg_bash_exporter_cache_misses",
+		Name: "pg_bash_exporter_cache_misses_total",
 		Help: "Number of cache misses.",
 	})
 }
