@@ -114,17 +114,22 @@ PG-Bash Exporter — это конфигурируемый экспортер д
 
     ```yaml
     server:
-      # Адрес, на котором будет работать экспортер
-      listen_address: "0.0.0.0:9876"
-      # Путь, по которому будут доступны метрики
-      metrics_path: "/metrics"
-
+        # Адрес, на котором будет работать экспортер
+        listen_address: "0.0.0.0:9876"
+        # Путь, по которому будут доступны метрики
+        metrics_path: "/metrics"
+        
+    logging:
+    # Logging level. Уровень логирования: "debug", "info", "error".
+        level: "info"
+    
+    
     metrics:
-      # Самая простая метрика для примера
-      - name: "system_uptime_seconds"
-        help: "Время работы системы в секундах."
-        type: "counter"
-        command: "cat /proc/uptime | awk '{print $1}'"
+    # Самая простая метрика для примера
+    - name: "system_uptime_seconds"
+      help: "Время работы системы в секундах."
+      type: "counter"
+      command: "cat /proc/uptime | awk '{print $1}'"
     ```
 
 2.  **Запустите экспортер**
@@ -147,11 +152,11 @@ PG-Bash Exporter — это конфигурируемый экспортер д
     В ответ вы должны увидеть что-то похожее на это (ваши цифры и некоторые другие метрики будут отличаться):
 
     ```text
+    # ... другие служебные метрики самого экспортера ...
+    
     # HELP system_uptime_seconds Время работы системы в секундах.
     # TYPE system_uptime_seconds counter
     system_uptime_seconds 35482.18
-
-    # ... другие служебные метрики самого экспортера ...
     ```
 ## Конфигурация
 
@@ -190,7 +195,7 @@ PG-Bash Exporter — это конфигурируемый экспортер д
 
 1.  **Найдите ID процесса (PID) экспортера:**
     ```sh
-    pgrep pg-bash-exporter
+    pgrep -f pg-bash-exporter
     # Вывод: 12345
     ```
 

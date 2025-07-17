@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"io"
 	"log"
 	"log/slog"
 	"net/http"
@@ -51,7 +50,7 @@ func main() {
 		log.Fatalf("failed to load configuration: %v", err)
 	}
 
-	setupLogger(cfg.Logging)
+	config.SetupLogger(cfg.Logging)
 
 	slog.Info("Configuration loaded and logger initialized successfully")
 
@@ -127,37 +126,4 @@ func main() {
 	}
 
 	slog.Info("server exiting")
-}
-
-func setupLogger(cfg config.Logging) {
-	var logOutput io.Writer
-
-	if cfg.Path == "" {
-		logOutput = os.Stdout
-	} else {
-		file, err := os.OpenFile(cfg.Path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0664)
-		if err != nil {
-			log.Fatalf("failed to open log file: %v", err)
-		}
-		logOutput = file
-	}
-
-	var logLevel slog.Level
-
-	switch cfg.Level {
-	case "debug":
-		logLevel = slog.LevelDebug
-	case "info":
-		logLevel = slog.LevelInfo
-	case "error":
-		logLevel = slog.LevelError
-	default:
-		logLevel = slog.LevelInfo
-	}
-
-	handler := slog.NewJSONHandler(logOutput, &slog.HandlerOptions{Level: logLevel})
-
-	logger := slog.New(handler)
-
-	slog.SetDefault(logger)
 }
