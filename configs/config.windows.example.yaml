@@ -1,0 +1,59 @@
+# ===================================================================
+# pg-bash-exporter: Example Configuration for Windows
+#
+# This configuration uses PowerShell commands to collect common metrics
+# from a Windows environment.
+# ===================================================================
+
+global:
+  shell: "powershell"
+
+logging:
+  level: "info"
+
+metrics:
+  - name: "windows_system_uptime_seconds"
+    help: "System uptime in seconds."
+    type: "counter"
+    command: "(Get-Date) - (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime | Select-Object -ExpandProperty TotalSeconds"
+
+  - name: "windows_cpu_load_percent"
+    help: "Current CPU load percentage."
+    type: "gauge"
+    command: |
+      (Get-Counter -Counter '\Processor(_Total)\% Processor Time').CounterSamples.CookedValue
+
+  - name: "windows_process_count"
+    help: "Total number of running processes."
+    type: "gauge"
+    command: "(Get-Process).Count"
+
+  - name: "windows_memory_usage_bytes"
+    help: "Memory usage statistics in bytes."
+    type: "gauge"
+    command: "Get-CimInstance -ClassName Win32_OperatingSystem | Select-Object TotalVisibleMemorySize, FreePhysicalMemory"
+    postfix_metrics:
+      - name: "total"
+        help: "Total physical memory in bytes."
+        type: "gauge"
+        command: "$output.TotalVisibleMemorySize * 1024"
+      - name: "free"
+        help: "Free physical memory in bytes."
+        type: "gauge"
+        command: "$output.FreePhysicalMemory * 1024"
+
+  - name: "windows_disk_usage_bytes"
+    help: "Disk usage for a specific drive."
+    type: "gauge"
+    command: "Get-Volume -DriveLetter C | Select-Object Size, SizeRemaining"
+    labels:
+      drive: "C"
+    postfix_metrics:
+      - name: "total"
+        help: "Total space on the drive in bytes."
+        type: "gauge"
+        command: "$output.Size"
+      - name: "free"
+        help: "Free space on the drive in bytes."
+        type: "gauge"
+        command: "$output.SizeRemaining"

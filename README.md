@@ -120,34 +120,11 @@ PG-Bash Exporter — это конфигурируемый экспортер д
 
 ## Быстрый старт (Windows)
 
-Для Windows используется `powershell` в качестве оболочки по умолчанию. Команды в конфигурации должны быть написаны на PowerShell.
+Для Windows используется `powershell` в качестве оболочки по умолчанию. Команды в конфигурации должны быть написаны на PowerShell. Рекомендуется использовать пример конфигурации, созданный специально для Windows.
 
 1.  **Создайте файл конфигурации**
 
-    Создайте файл `config.yaml` со следующим содержимым:
-
-    ```yaml
-    global:
-      shell: "powershell"
-
-    server:
-        listen_address: "0.0.0.0:9876"
-        metrics_path: "/metrics"
-        
-    logging:
-        level: "info"
-
-    metrics:
-    - name: "windows_process_count"
-      help: "Количество запущенных процессов."
-      type: "gauge"
-      command: "(Get-Process).Count"
-
-    - name: "windows_cpu_load_percent"
-      help: "Загрузка процессора в процентах."
-      type: "gauge"
-      command: "(Get-Counter -Counter '\Processor(_Total)\% Processor Time').CounterSamples.CookedValue"
-    ```
+    Скопируйте содержимое файла [`configs/config.windows.example.yaml`](./configs/config.windows.example.yaml) в новый файл `config.yaml`.
 
 2.  **Запустите экспортер**
 
@@ -158,7 +135,7 @@ PG-Bash Exporter — это конфигурируемый экспортер д
 3.  **Проверьте метрики**
 
     ```powershell
-    Invoke-RestMethod -Uri http://localhost:9876/metrics
+    Invoke-RestMethod -Uri http://localhost:5252/metrics
     ```
 
 ## Конфигурация
