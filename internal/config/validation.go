@@ -21,10 +21,6 @@ var (
 func (c *Config) Validate() error {
 	var allErrors []error
 
-	if err := c.Server.validate(); err != nil {
-		allErrors = append(allErrors, err)
-	}
-
 	if err := c.Logging.validate(); err != nil {
 		allErrors = append(allErrors, err)
 	}
@@ -44,22 +40,6 @@ func (c *Config) Validate() error {
 	}
 
 	return errors.Join(allErrors...)
-}
-
-func (s *Server) validate() error {
-	var errs []error
-
-	if s.ListenAddress == "" {
-		errs = append(errs, errors.New("server.listen_address is required"))
-	}
-
-	if s.MetricsPath == "" {
-		errs = append(errs, errors.New("server.metrics_path is required"))
-	} else if s.MetricsPath[0] != '/' {
-		errs = append(errs, errors.New("server.metrics_path must start with '/'"))
-	}
-
-	return errors.Join(errs...)
 }
 
 func (l *Logging) validate() error {
@@ -130,22 +110,22 @@ func (m *Metric) validate() error {
 		errs = append(errs, err)
 	}
 
-	for _, subMetric := range m.SubMetrics {
-		if err := subMetric.validate(); err != nil {
-			errs = append(errs, fmt.Errorf("sub-metric '%s': %w", subMetric.Name, err))
+	for _, postfixMetric := range m.PostfixMetrics {
+		if err := postfixMetric.validate(); err != nil {
+			errs = append(errs, fmt.Errorf("postfix-metric '%s': %w", postfixMetric.Name, err))
 		}
 	}
 
 	return errors.Join(errs...)
 }
 
-func (sm *SubMetric) validate() error {
+func (sm *PostfixMetric) validate() error {
 	var errs []error
 
 	if sm.Name == "" {
 		errs = append(errs, errors.New("name is required"))
 	} else if !metricRegex.MatchString(sm.Name) {
-		errs = append(errs, errors.New("sub-metric name is not valid"))
+		errs = append(errs, errors.New("postfix-metric name is not valid"))
 	}
 
 	if sm.Help == "" {

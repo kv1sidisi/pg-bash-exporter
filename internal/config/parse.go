@@ -1,7 +1,6 @@
 package config
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"time"
@@ -15,17 +14,10 @@ const (
 	DefaultMaxConcurrent = 10
 )
 
-var configPathFlag string
-
-// init sets flags with package initialization
-func init() {
-	flag.StringVar(&configPathFlag, "config", "", "Path to the configuration file. Priority: flag > CONFIG_PATH env var > default value.")
-}
-
 // GetPath returns config file path with priority: flag > env > default
-func GetPath() string {
-	if configPathFlag != "" {
-		return configPathFlag
+func GetPath(configPath string) string {
+	if configPath != "" {
+		return configPath
 	}
 
 	if envPath := os.Getenv("CONFIG_PATH"); envPath != "" {

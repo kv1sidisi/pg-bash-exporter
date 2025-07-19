@@ -19,16 +19,37 @@ import (
 	"time"
 )
 
-var ValidationFlag bool
+var (
+	ValidationFlag bool
+	configPath     string
+)
 
 func init() {
 	flag.BoolVar(&ValidationFlag, "validate-config", false, "Validate the configuration file.")
+	flag.StringVar(&configPath, "config", "", "Path to the configuration file.")
 }
 
 func main() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, `Usage of pg-bash-exporter:
+
+pg-bash-exporter [flags]
+
+Flags:
+`)
+		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, `
+Environment variables:
+  CONFIG_PATH: Path to the configuration file. (e.g., "/etc/pg-bash-exporter/config.yaml")
+  LISTEN_ADDRESS: Server listen address. (e.g., "0.0.0.0:9876")
+  METRICS_PATH: Metrics path. (e.g., "/metrics")
+  BLACKLIST_FILE_PATH: Path to a YAML file with blacklisted commands.
+`)
+	}
+
 	flag.Parse()
 
-	configPath := config.GetPath()
+	configPath := config.GetPath(configPath)
 
 	if ValidationFlag {
 		var cfg config.Config
@@ -54,9 +75,19 @@ func main() {
 
 	slog.Info("Configuration loaded and logger initialized successfully")
 
+	listenAddress := os.Getenv("LISTEN_ADDRESS")
+	if listenAddress == "" {
+		listenAddress = ":5252"
+	}
+
+	metricsPath := os.Getenv("METRICS_PATH")
+	if metricsPath == "" {
+		metricsPath = "/metrics"
+	}
+
 	cache := cache.New()
 
-	exec := &executor.BashExecutor{}
+	exec := &executor.CommandExecutor{}
 
 	metricsCollector := collector.NewCollector(&cfg, slog.Default(), exec, cache, configPath)
 
@@ -68,28 +99,49 @@ func main() {
 	registry.MustRegister(collector.CommandErrors)
 	registry.MustRegister(collector.CacheHits)
 	registry.MustRegister(collector.CacheMisses)
+	registry.MustRegister(collector.ConfigReloads)
+	registry.MustRegister(collector.ConfigReloadErrors)
+	registry.MustRegister(collector.CommandDuration)
+	registry.MustRegister(collector.ConcurrentCommands)
 
 	mux := http.NewServeMux()
-	mux.Handle(cfg.Server.MetricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+
+	mux.HandleFunc("/-/reload", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			fmt.Fprintf(w, "This endpoint requires a POST request.\n")
+			return
+		}
+
+		if err := metricsCollector.ReloadConfig(); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, "Failed to reload config: %s\n", err)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "Config reloaded successfully.\n")
+	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
 <head><title>PG-Bash Exporter</title></head>
 <body>
 <h1>PG-Bash Exporter</h1>
-<p><a href='` + cfg.Server.MetricsPath + `'>Metrics</a></p>
+<p><a href='` + metricsPath + `'>Metrics</a></p>
 </body>
 </html>`))
 	})
 	server := &http.Server{
-		Addr:    cfg.Server.ListenAddress,
+		Addr:    listenAddress,
 		Handler: mux,
 	}
 
 	go func() {
 		slog.Info("Starting pg-bash-exporter server",
-			"listen_address", cfg.Server.ListenAddress,
-			"metrics_path", cfg.Server.MetricsPath,
+			"listen_address", listenAddress,
+			"metrics_path", metricsPath,
 		)
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {

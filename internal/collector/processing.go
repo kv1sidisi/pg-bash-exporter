@@ -7,6 +7,7 @@ import (
 	"pg-bash-exporter/internal/config"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // getCommandOutput executes command from metric config.
@@ -38,7 +39,18 @@ func (c *Collector) getCommandOutput(metricConfig config.Metric) ([]string, erro
 		timeout = metricConfig.Timeout
 	}
 
-	out, err := c.executor.ExecuteCommand(context.Background(), metricConfig.Command, timeout)
+	shell := c.config.Global.Shell
+	if metricConfig.Shell != "" {
+		shell = metricConfig.Shell
+	}
+	if shell == "" {
+		shell = "bash"
+	}
+
+	start := time.Now()
+	out, err := c.executor.ExecuteCommand(context.Background(), shell, metricConfig.Command, timeout)
+	duration := time.Since(start).Seconds()
+	CommandDuration.WithLabelValues(metricConfig.Name).Observe(duration)
 
 	c.cache.Set(cacheKey, out, err, ttl)
 
@@ -50,7 +62,7 @@ func (c *Collector) getCommandOutput(metricConfig config.Metric) ([]string, erro
 	return strings.Split(strings.TrimSpace(out), "\n"), nil
 }
 
-// collectSimpleMetric handles metric that are defined by single command and without sub-metrics
+// collectSimpleMetric handles metric that are defined by single command and without postfix-metrics
 func (c *Collector) collectSimpleMetric(ch chan<- prometheus.Metric, metricConfig config.Metric) {
 	lines, err := c.getCommandOutput(metricConfig)
 	if err != nil {
@@ -89,15 +101,15 @@ func (c *Collector) collectSimpleMetric(ch chan<- prometheus.Metric, metricConfi
 			dynLblValues...,
 		)
 		if err != nil {
-			c.logger.Error("failed to create sub-metric", "sub-metric", metricConfig.Name, "error", err)
+			c.logger.Error("failed to create postfix-metric", "postfix-metric", metricConfig.Name, "error", err)
 			continue
 		}
 		ch <- metric
 	}
 }
 
-// collectComplicatedMetric handles metric group defined with sub-metrics section.
-// It runs one command and parses each line of the output to sub-metrics metrics.
+// collectComplicatedMetric handles metric group defined with postfix-metrics section.
+// It runs one command and parses each line of the output to postfix-metrics metrics.
 func (c *Collector) collectComplicatedMetric(ch chan<- prometheus.Metric, metricConfig config.Metric) {
 	lines, err := c.getCommandOutput(metricConfig)
 	if err != nil {
@@ -111,44 +123,44 @@ func (c *Collector) collectComplicatedMetric(ch chan<- prometheus.Metric, metric
 			continue
 		}
 
-		for _, subMetric := range metricConfig.SubMetrics {
-			if matched, err := c.matchPattern(line, subMetric.Match); !matched || err != nil {
+		for _, postfixMetric := range metricConfig.PostfixMetrics {
+			if matched, err := c.matchPattern(line, postfixMetric.Match); !matched || err != nil {
 				if err != nil {
-					c.logger.Error("invalid regex patterin in sub-metric", "sub-metric", subMetric.Name, "pattern", subMetric.Match, "error", err)
+					c.logger.Error("invalid regex patterin in postfix-metric", "postfix-metric", postfixMetric.Name, "pattern", postfixMetric.Match, "error", err)
 				}
 				continue
 			}
 
-			if subMetric.Field >= len(fields) {
-				c.logger.Error("sub-metric`s field index out of range of command output fields", "sub-metric", subMetric.Name, "field_index", subMetric.Field, "line", line)
+			if postfixMetric.Field >= len(fields) {
+				c.logger.Error("postfix-metric`s field index out of range of command output fields", "postfix-metric", postfixMetric.Name, "field_index", postfixMetric.Field, "line", line)
 				continue
 			}
-			val, err := strconv.ParseFloat(fields[subMetric.Field], 64)
+			val, err := strconv.ParseFloat(fields[postfixMetric.Field], 64)
 			if err != nil {
-				c.logger.Error("failed to parse field for sub-metric", "sub-metric", subMetric.Name, "value", fields[subMetric.Field], "error", err)
+				c.logger.Error("failed to parse field for postfix-metric", "postfix-metric", postfixMetric.Name, "value", fields[postfixMetric.Field], "error", err)
 				continue
 			}
 
-			valueType, err := toPrometheusValueType(subMetric.Type)
+			valueType, err := toPrometheusValueType(postfixMetric.Type)
 			if err != nil {
-				c.logger.Error(err.Error(), "sub-metric", subMetric.Name)
+				c.logger.Error(err.Error(), "postfix-metric", postfixMetric.Name)
 				return
 			}
-			labels := mergeLabels(metricConfig.Labels, subMetric.Labels)
+			labels := mergeLabels(metricConfig.Labels, postfixMetric.Labels)
 
-			dynLblNames := getLabelNames(subMetric.DynamicLabels)
-			dynLblValues := getLabelValues(fields, subMetric.DynamicLabels)
+			dynLblNames := getLabelNames(postfixMetric.DynamicLabels)
+			dynLblValues := getLabelValues(fields, postfixMetric.DynamicLabels)
 
-			fullName := metricConfig.Name + "_" + subMetric.Name
+			fullName := metricConfig.Name + "_" + postfixMetric.Name
 
 			metric, err := prometheus.NewConstMetric(
-				prometheus.NewDesc(fullName, subMetric.Help, dynLblNames, labels),
+				prometheus.NewDesc(fullName, postfixMetric.Help, dynLblNames, labels),
 				valueType,
 				val,
 				dynLblValues...,
 			)
 			if err != nil {
-				c.logger.Error("failed to create sub-metric", "sub-metric", subMetric.Name, "error", err)
+				c.logger.Error("failed to create postfix-metric", "postfix-metric", postfixMetric.Name, "error", err)
 				continue
 			}
 			ch <- metric

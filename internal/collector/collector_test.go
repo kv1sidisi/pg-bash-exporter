@@ -23,7 +23,7 @@ type mockExecutor struct {
 }
 
 // ExecuteCommand returns mock output and error.
-func (m *mockExecutor) ExecuteCommand(ctx context.Context, command string, timeout time.Duration) (string, error) {
+func (m *mockExecutor) ExecuteCommand(ctx context.Context, shell, command string, timeout time.Duration) (string, error) {
 	return m.output, m.err
 }
 
@@ -60,24 +60,24 @@ simple_metric 123
 `,
 		},
 		{
-			name: "gauge metric with sub-metrics",
+			name: "gauge metric with postfix-metrics",
 			config: &config.Config{
 				Metrics: []config.Metric{
 					{
-						Name:    "sub_metric",
-						Help:    "A metric with sub-metrics.",
+						Name:    "postfix_metric",
+						Help:    "A metric with postfix-metrics.",
 						Type:    "gauge",
 						Command: "echo '10 20'",
-						SubMetrics: []config.SubMetric{
+						PostfixMetrics: []config.PostfixMetric{
 							{
-								Name:  "sub_one",
-								Help:  "First sub-metric.",
+								Name:  "postfix_one",
+								Help:  "First postfix-metric.",
 								Type:  "gauge",
 								Field: 0,
 							},
 							{
-								Name:  "sub_two",
-								Help:  "Second sub-metric.",
+								Name:  "postfix_two",
+								Help:  "Second postfix-metric.",
 								Type:  "gauge",
 								Field: 1,
 							},
@@ -93,12 +93,12 @@ simple_metric 123
 				err:    nil,
 			},
 			expectedMetric: `
-# HELP sub_metric_sub_one First sub-metric.
-# TYPE sub_metric_sub_one gauge
-sub_metric_sub_one 10
-# HELP sub_metric_sub_two Second sub-metric.
-# TYPE sub_metric_sub_two gauge
-sub_metric_sub_two 20
+# HELP postfix_metric_postfix_one First postfix-metric.
+# TYPE postfix_metric_postfix_one gauge
+postfix_metric_postfix_one 10
+# HELP postfix_metric_postfix_two Second postfix-metric.
+# TYPE postfix_metric_postfix_two gauge
+postfix_metric_postfix_two 20
 `,
 		},
 		{
@@ -132,10 +132,10 @@ sub_metric_sub_two 20
 						Help:    "A metric with dynamic labels.",
 						Type:    "gauge",
 						Command: "echo 'label_val1 10' && echo 'label_val2 20'",
-						SubMetrics: []config.SubMetric{
+						PostfixMetrics: []config.PostfixMetric{
 							{
-								Name:  "dynamic_sub_metric",
-								Help:  "A sub-metric with dynamic labels.",
+								Name:  "dynamic_postfix_metric",
+								Help:  "A postfix-metric with dynamic labels.",
 								Type:  "gauge",
 								Field: 1,
 								DynamicLabels: []config.DynamicLabel{
@@ -154,21 +154,21 @@ sub_metric_sub_two 20
 				err:    nil,
 			},
 			expectedMetric: `
-# HELP dynamic_labels_metric_dynamic_sub_metric A sub-metric with dynamic labels.
-# TYPE dynamic_labels_metric_dynamic_sub_metric gauge
-dynamic_labels_metric_dynamic_sub_metric{my_label="label_val1"} 10
-dynamic_labels_metric_dynamic_sub_metric{my_label="label_val2"} 20
+# HELP dynamic_labels_metric_dynamic_postfix_metric A postfix-metric with dynamic labels.
+# TYPE dynamic_labels_metric_dynamic_postfix_metric gauge
+dynamic_labels_metric_dynamic_postfix_metric{my_label="label_val1"} 10
+dynamic_labels_metric_dynamic_postfix_metric{my_label="label_val2"} 20
 `,
 		},
 		{
-			name: "sub-metric with pattern match",
+			name: "postfix-metric with pattern match",
 			config: &config.Config{
 				Metrics: []config.Metric{
 					{
 						Name:    "matched_metric",
-						Help:    "metric with matched sub-metrics.",
+						Help:    "metric with matched postfix-metrics.",
 						Command: "echo -e 'CPU label1 100\\MEM label2 200'",
-						SubMetrics: []config.SubMetric{
+						PostfixMetrics: []config.PostfixMetric{
 							{
 								Name:  "cpu",
 								Help:  "Metric for cpu.",
@@ -297,14 +297,14 @@ connections{type="udp"} 25
 			expectedMetric: ``,
 		},
 		{
-			name: "sub-metric with no matching pattern",
+			name: "postfix-metric with no matching pattern",
 			config: &config.Config{
 				Metrics: []config.Metric{
 					{
 						Name:    "filter_metric",
-						Help:    "metric with a sub-metric that filters lines.",
+						Help:    "metric with a postfix-metric that filters lines.",
 						Command: "echo -e 'matched_line 100\nunmatched_line 200'",
-						SubMetrics: []config.SubMetric{
+						PostfixMetrics: []config.PostfixMetric{
 							{
 								Name:  "filtered_sub",
 								Help:  "created for matched lines.",
