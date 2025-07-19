@@ -14,8 +14,6 @@ const (
 	DefaultMaxConcurrent = 10
 )
 
-var configPath string
-
 // GetPath returns config file path with priority: flag > env > default
 func GetPath(configPath string) string {
 	if configPath != "" {
