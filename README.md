@@ -333,39 +333,6 @@ network_connections_by_state{state="LISTEN"} 10
 docker compose down
 ```
 
-## Справочная информация
-
-### Внутренние метрики экспортера
-
-Экспортер собирает собственные метрики для мониторинга своей работы. Все они начинаются с префикса `pg_bash_exporter_`.
-
-*   `pg_bash_exporter_checks_total` (counter)
-    Счетчик общего количества запросов метрик от Prometheus.
-
-*   `pg_bash_exporter_check_duration_seconds` (histogram)
-    Время, затраченное на сбор всех метрик из конфигурационного файла.
-
-*   `pg_bash_exporter_command_errors_total{metric_name="..."}` (counter)
-    Счетчик ошибок выполнения команд для каждой метрики. Разделен по меткам `metric_name`.
-
-*   `pg_bash_exporter_cache_hits_total` (counter)
-    Количество раз, когда результат выполнения команды был взят из кеша.
-
-*   `pg_bash_exporter_cache_misses_total` (counter)
-    Количество раз, когда результат выполнения команды не был найден в кеше.
-
-*   `pg_bash_exporter_config_reloads_total` (counter)
-    Счетчик успешных перезагрузок конфигурации по сигналу `SIGHUP`.
-
-*   `pg_bash_exporter_config_reload_errors_total` (counter)
-    Счетчик ошибок при перезагрузке конфигурации.
-
-*   `pg_bash_exporter_command_duration_seconds{metric_name="..."}` (histogram)
-    Время выполнения каждой отдельной команды. Разделен по меткам `metric_name`.
-
-*   `pg_bash_exporter_concurrent_commands` (gauge)
-    Количество одновременно выполняющихся команд.
-
 ## Документация для пользователей
 
 *   [**Решение проблем (TROUBLESHOOTING.md)**](./TROUBLESHOOTING.md) — Что делать, если что-то пошло не так.
