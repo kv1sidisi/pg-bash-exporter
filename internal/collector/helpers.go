@@ -10,7 +10,7 @@ import (
 
 // mergeLabels creates a new map containing labels from parent and child metric.
 // If label exists in both maps, value from child map is used.
-// Allows sub-metrics to have own and parent labels, and override parent labels.
+// Allows postfix-metrics to have own and parent labels, and override parent labels.
 func mergeLabels(parent, child map[string]string) map[string]string {
 	if parent == nil && child == nil {
 		return nil

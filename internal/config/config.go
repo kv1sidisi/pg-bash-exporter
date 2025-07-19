@@ -34,13 +34,13 @@ type Metric struct {
 	Timeout         time.Duration     `yaml:"timeout,omitempty"`
 	CacheTTL        time.Duration     `yaml:"cache_ttl,omitempty"`
 	Labels          map[string]string `yaml:"labels,omitempty"`
-	SubMetrics      []SubMetric       `yaml:"sub_metrics,omitempty"`
+	PostfixMetrics  []PostfixMetric   `yaml:"postfix_metrics,omitempty"`
 	IgnoreBlacklist bool              `yaml:"ignore_blacklist,omitempty"`
 	Field           int               `yaml:"field,omitempty"`
 	DynamicLabels   []DynamicLabel    `yaml:"dynamic_labels,omitempty"`
 }
 
-type SubMetric struct {
+type PostfixMetric struct {
 	Name          string            `yaml:"name"`
 	Help          string            `yaml:"help"`
 	Type          string            `yaml:"type"`

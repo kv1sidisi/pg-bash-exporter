@@ -39,7 +39,7 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	defer c.mu.RUnlock()
 
 	for _, metricConfig := range c.config.Metrics {
-		if len(metricConfig.SubMetrics) == 0 {
+		if len(metricConfig.PostfixMetrics) == 0 {
 			dynLblNames := getLabelNames(metricConfig.DynamicLabels)
 
 			desc := prometheus.NewDesc(
@@ -51,16 +51,16 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 			ch <- desc
 			continue
 		}
-		for _, subMetric := range metricConfig.SubMetrics {
-			labels := mergeLabels(metricConfig.Labels, subMetric.Labels)
+		for _, postfixMetric := range metricConfig.PostfixMetrics {
+			labels := mergeLabels(metricConfig.Labels, postfixMetric.Labels)
 
-			dynLblNames := getLabelNames(subMetric.DynamicLabels)
+			dynLblNames := getLabelNames(postfixMetric.DynamicLabels)
 
-			fullName := metricConfig.Name + "_" + subMetric.Name
+			fullName := metricConfig.Name + "_" + postfixMetric.Name
 
 			desc := prometheus.NewDesc(
 				fullName,
-				subMetric.Help,
+				postfixMetric.Help,
 				dynLblNames,
 				labels,
 			)
@@ -121,7 +121,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 				<-smph
 			}()
 
-			if len(mc.SubMetrics) == 0 {
+			if len(mc.PostfixMetrics) == 0 {
 				c.collectSimpleMetric(ch, mc)
 			} else {
 				c.collectComplicatedMetric(ch, mc)

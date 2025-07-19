@@ -325,7 +325,7 @@ metrics:
 			expectedError: "dynamic_label name is required",
 		},
 		{
-			name: "sub-metric with invalid name",
+			name: "postfix-metric with invalid name",
 			yaml: `
 server:
   listen_address: ":1234"
@@ -339,17 +339,17 @@ metrics:
     help: "help"
     type: "gauge"
     command: "echo 1"
-    sub_metrics:
-      - name: "invalid-sub-metric"
+    postfix_metrics:
+      - name: "invalid-postfix-metric"
         help: "help"
         type: "gauge"
         field: 0
 `,
 			wantErr:       true,
-			expectedError: "sub-metric name is not valid",
+			expectedError: "postfix-metric name is not valid",
 		},
 		{
-			name: "sub-metric with empty help",
+			name: "postfix-metric with empty help",
 			yaml: `
 server:
   listen_address: ":1234"
@@ -363,7 +363,7 @@ metrics:
     help: "help"
     type: "gauge"
     command: "echo 1"
-    sub_metrics:
+    postfix_metrics:
       - name: "my_sub"
         help: ""
         type: "gauge"
@@ -373,7 +373,7 @@ metrics:
 			expectedError: "help string is required",
 		},
 		{
-			name: "sub-metric with invalid type",
+			name: "postfix-metric with invalid type",
 			yaml: `
 server:
   listen_address: ":1234"
@@ -387,7 +387,7 @@ metrics:
     help: "help"
     type: "gauge"
     command: "echo 1"
-    sub_metrics:
+    postfix_metrics:
       - name: "my_sub"
         help: "a sub metric"
         type: "bad_type"
@@ -397,7 +397,7 @@ metrics:
 			expectedError: "type is invalid. valid: gauge, counter",
 		},
 		{
-			name: "sub-metric with negative field",
+			name: "postfix-metric with negative field",
 			yaml: `
 server:
   listen_address: ":1234"
@@ -411,7 +411,7 @@ metrics:
     help: "help"
     type: "gauge"
     command: "echo 1"
-    sub_metrics:
+    postfix_metrics:
       - name: "my_sub"
         help: "a sub metric"
         type: "gauge"

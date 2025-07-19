@@ -43,14 +43,14 @@ global:
 # for example: `_seconds`, `_bytes`, `_total`.
 # -------------------------------------------------------------------
 metrics:
-  # --- Example 1: A complex metric with multiple sub-metrics ---
+  # --- Example 1: A complex metric with multiple postfix-metrics ---
   # One command runs, and its output is used to generate several metrics.
   - name: "system_load"
     help: "System load average."
-    type: "gauge" # This type is a placeholder, as sub-metrics define their own.
+    type: "gauge" # This type is a placeholder, as postfix-metrics define their own.
     command: "cat /proc/loadavg"
     cache_ttl: "10s" # Override global cache TTL for this specific metric.
-    sub_metrics:
+    postfix_metrics:
       - name: "load_1m"
         help: "1-minute load average."
         type: "gauge"
@@ -76,7 +76,7 @@ metrics:
     # This metric will produce multiple results (one per line of `df` output).
     # We need dynamic labels to distinguish them.
     # Without them, Prometheus would report a "duplicate metrics" error.
-    sub_metrics:
+    postfix_metrics:
       - name: "total_bytes"
         help: "Total disk space in bytes."
         type: "gauge"
@@ -105,7 +105,7 @@ metrics:
     cache_ttl: "5s"
 
   # --- Example 4: Static labels and label overriding ---
-  # Demonstrates how static labels are applied and how sub-metrics can override them.
+  # Demonstrates how static labels are applied and how postfix-metrics can override them.
   - name: "service_status"
     help: "Status of various services."
     type: "gauge"
@@ -113,14 +113,14 @@ metrics:
     command: "echo 'nginx active 1' && echo 'postgres inactive 0' && echo 'redis active 1'"
     ignore_blacklist: true
     labels:
-      # This label will be applied to all sub-metrics unless overridden.
+      # This label will be applied to all postfix-metrics unless overridden.
       environment: "production"
       region: "eu-central-1"
-    sub_metrics:
+    postfix_metrics:
       - name: "nginx"
         help: "Status of the Nginx service."
         type: "gauge"
-        match: "^nginx" # This sub-metric only applies to lines starting with "nginx".
+        match: "^nginx" # This postfix-metric only applies to lines starting with "nginx".
         field: 2
         labels:
           # We can add more specific labels here.
@@ -131,7 +131,7 @@ metrics:
         match: "^postgres"
         field: 2
         labels:
-          # This label OVERRIDES the parent's "environment" label for this sub-metric only.
+          # This label OVERRIDES the parent's "environment" label for this postfix-metric only.
           environment: "staging"
           service_type: "database"
 
@@ -146,7 +146,7 @@ metrics:
     command: "echo 42"
     ignore_blacklist: true
 
-  # --- Example 6: A simple metric that does not have sub-metrics ---
+  # --- Example 6: A simple metric that does not have postfix-metrics ---
   # This is a very common use case for simple "gauge" metrics.
   - name: "process_count"
     help: "Total number of running processes."

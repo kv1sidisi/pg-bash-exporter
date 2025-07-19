@@ -130,22 +130,22 @@ func (m *Metric) validate() error {
 		errs = append(errs, err)
 	}
 
-	for _, subMetric := range m.SubMetrics {
-		if err := subMetric.validate(); err != nil {
-			errs = append(errs, fmt.Errorf("sub-metric '%s': %w", subMetric.Name, err))
+	for _, postfixMetric := range m.PostfixMetrics {
+		if err := postfixMetric.validate(); err != nil {
+			errs = append(errs, fmt.Errorf("postfix-metric '%s': %w", postfixMetric.Name, err))
 		}
 	}
 
 	return errors.Join(errs...)
 }
 
-func (sm *SubMetric) validate() error {
+func (sm *PostfixMetric) validate() error {
 	var errs []error
 
 	if sm.Name == "" {
 		errs = append(errs, errors.New("name is required"))
 	} else if !metricRegex.MatchString(sm.Name) {
-		errs = append(errs, errors.New("sub-metric name is not valid"))
+		errs = append(errs, errors.New("postfix-metric name is not valid"))
 	}
 
 	if sm.Help == "" {
