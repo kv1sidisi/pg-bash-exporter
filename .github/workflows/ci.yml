@@ -26,8 +26,8 @@ jobs:
           name: coverage-report
           path: coverage.out
 
-  build:
-    name: Build
+  build-linux:
+    name: Build Linux
     needs: [test]
     runs-on: ubuntu-latest
     steps:
@@ -47,3 +47,25 @@ jobs:
         with:
           name: pg-bash-exporter-static-linux-amd64
           path: pg-bash-exporter
+
+  build-windows:
+    name: Build Windows
+    needs: [test]
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build Windows application
+        run: GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -v -o pg-bash-exporter.exe ./cmd/exporter
+
+      - name: Upload Windows binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: pg-bash-exporter-windows-amd64
+          path: pg-bash-exporter.exe
