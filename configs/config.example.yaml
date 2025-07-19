@@ -7,9 +7,9 @@
 # Section 1: Server and Global Settings
 # -------------------------------------------------------------------
 server:
-  # The address and port the server will listen on.
+  # The address and port the server will listen on can be configured via
+  # LISTEN_ADDRESS and METRICS_PATH environment variables or .env file.
   listen_address: "0.0.0.0:8080"
-  # The path where metrics will be exposed. Must start with '/'.
   metrics_path: "/metrics"
 
 logging:
@@ -25,6 +25,8 @@ global:
   cache_ttl: "3m"
   # Maximum number of commands to run concurrently during a scrape.
   max_concurrent: 10
+  # Path to a YAML file containing a list of blacklisted commands.
+  # blacklist_file: "blacklist.yaml"
   # A list of commands that are forbidden from being executed for security.
   # This checks only the first word of the command (e.g., "rm").
   command_blacklist:
