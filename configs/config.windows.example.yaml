@@ -2,7 +2,9 @@
 # pg-bash-exporter: Example Configuration for Windows
 #
 # This configuration uses PowerShell commands to collect common metrics
-# from a Windows environment.
+# from a Windows environment. The commands have been revised to ensure
+# their output is a simple, space-separated string of numbers,
+# which is required for the exporter to parse them correctly.
 # ===================================================================
 
 global:
@@ -15,45 +17,53 @@ metrics:
   - name: "windows_system_uptime_seconds"
     help: "System uptime in seconds."
     type: "counter"
-    command: "(Get-Date) - (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime | Select-Object -ExpandProperty TotalSeconds"
+    # This command is reliable and outputs a single numeric value using a culture-invariant format.
+    command: "((Get-Date) - (Get-CimInstance -ClassName Win32_OperatingSystem).LastBootUpTime).TotalSeconds.ToString([System.Globalization.CultureInfo]::InvariantCulture)"
 
   - name: "windows_cpu_load_percent"
     help: "Current CPU load percentage."
     type: "gauge"
-    command: |
-      (Get-Counter -Counter '\Processor(_Total)\% Processor Time').CounterSamples.CookedValue
+    # Using Get-CimInstance is more reliable than Get-Counter. This command isolates the numeric value and formats it correctly.
+    command: "(Get-CimInstance -ClassName Win32_PerfFormattedData_PerfOS_Processor | Where-Object { $_.Name -eq '_Total' }).PercentProcessorTime.ToString([System.Globalization.CultureInfo]::InvariantCulture)"
 
   - name: "windows_process_count"
     help: "Total number of running processes."
     type: "gauge"
+    # This command reliably returns a single integer.
     command: "(Get-Process).Count"
 
   - name: "windows_memory_usage_bytes"
     help: "Memory usage statistics in bytes."
     type: "gauge"
-    command: "Get-CimInstance -ClassName Win32_OperatingSystem | Select-Object TotalVisibleMemorySize, FreePhysicalMemory"
+    # This command outputs two space-separated values: total memory and free memory in bytes.
+    command: "$mem = Get-CimInstance -ClassName Win32_OperatingSystem; $total = $mem.TotalVisibleMemorySize * 1024; $free = $mem.FreePhysicalMemory * 1024; echo \"$total $free\""
     postfix_metrics:
       - name: "total"
         help: "Total physical memory in bytes."
         type: "gauge"
-        command: "$output.TotalVisibleMemorySize * 1024"
+        # The first field (index 0) from the command output.
+        field: 0
       - name: "free"
         help: "Free physical memory in bytes."
         type: "gauge"
-        command: "$output.FreePhysicalMemory * 1024"
+        # The second field (index 1) from the command output.
+        field: 1
 
   - name: "windows_disk_usage_bytes"
     help: "Disk usage for a specific drive."
     type: "gauge"
-    command: "Get-Volume -DriveLetter C | Select-Object Size, SizeRemaining"
+    # This command outputs two space-separated values: total size and remaining size in bytes.
+    command: "$vol = Get-Volume -DriveLetter C; echo \"$($vol.Size) $($vol.SizeRemaining)\""
     labels:
       drive: "C"
     postfix_metrics:
       - name: "total"
         help: "Total space on the drive in bytes."
         type: "gauge"
-        command: "$output.Size"
+        # The first field (index 0) from the command output.
+        field: 0
       - name: "free"
         help: "Free space on the drive in bytes."
         type: "gauge"
-        command: "$output.SizeRemaining"
+        # The second field (index 1) from the command output.
+        field: 1
