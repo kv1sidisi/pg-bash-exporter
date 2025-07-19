@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -62,18 +63,7 @@ metrics:
 	}
 
 	// Setup server
-	mux := http.NewServeMux()
-	mux.HandleFunc("/-/reload", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
-		if err := collector.ReloadConfig(); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-	})
+	mux := newRouter(collector, prometheus.NewRegistry(), "/metrics")
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
@@ -83,7 +73,7 @@ metrics:
 	}
 
 	// Send reload request
-	req, err := http.NewRequest(http.MethodPost, srv.URL+"/-/reload", nil)
+	req, err := http.NewRequest(http.MethodGet, srv.URL+"/reload", nil)
 	if err != nil {
 		t.Fatalf("failed to create request: %v", err)
 	}
@@ -104,5 +94,18 @@ metrics:
 	}
 	if collector.GetConfig().Metrics[0].Type != "counter" {
 		t.Errorf("expected counter type after reload, got %s", collector.GetConfig().Metrics[0].Type)
+	}
+
+	// Send reload request with wrong method
+	req, err = http.NewRequest(http.MethodPost, srv.URL+"/reload", nil)
+	if err != nil {
+		t.Fatalf("failed to create request: %v", err)
+	}
+	res, err = http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("failed to send request: %v", err)
+	}
+	if res.StatusCode != http.StatusMethodNotAllowed {
+		t.Fatalf("expected status 405, got %d", res.StatusCode)
 	}
 }

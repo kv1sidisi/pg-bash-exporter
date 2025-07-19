@@ -279,9 +279,13 @@ network_connections_by_state{state="LISTEN"} 10
 Экспортер поддерживает два способа перезагрузки конфигурации без перезапуска процесса:
 
 1.  **Через HTTP-эндпоинт (рекомендуемый, кросс-платформенный):**
-    Отправьте POST-запрос на эндпоинт `/-/reload`.
+    Отправьте GET-запрос на эндпоинт `/reload`.
     ```sh
-    curl -X POST http://localhost:9876/-/reload
+    curl http://localhost:5252/reload
+    ```
+    Для Windows (PowerShell):
+    ```powershell
+    Invoke-RestMethod -Uri http://localhost:5252/reload
     ```
     В ответ сервер вернет статус `200 OK` в случае успеха или `500 Internal Server Error` с описанием ошибки.
 
@@ -298,7 +302,7 @@ network_connections_by_state{state="LISTEN"} 10
 ```yaml
 - job_name: 'bash_exporter'
   static_configs:
-    - targets: ['localhost:9876'] # Укажите здесь адрес вашего экспортера
+    - targets: ['localhost:5252'] # Укажите здесь адрес вашего экспортера
 ```
 
 ### Запуск в Docker Compose

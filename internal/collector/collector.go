@@ -90,6 +90,7 @@ func (c *Collector) ReloadConfig() error {
 	c.config = &newCfg
 
 	config.SetupLogger(newCfg.Logging)
+	c.logger = slog.Default()
 
 	ConfigReloads.Inc()
 	c.logger.Info("config reloaded successfully")
