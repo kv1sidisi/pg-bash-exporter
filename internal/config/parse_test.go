@@ -18,9 +18,6 @@ func TestLoad(t *testing.T) {
 		{
 			name: "valid config",
 			yaml: `
-server:
-  listen_address: ":1234"
-  metrics_path: "/metrics"
 logging:
   level: "info"
 global:
@@ -46,31 +43,8 @@ metrics:
 			wantErr: true,
 		},
 		{
-			name: "missing server address",
-			yaml: `
-server:
-  metrics_path: "/metrics"
-logging:
-  level: "info"
-global:
-  timeout: 1s
-  cache_ttl: 1s
-  max_concurrent: 1
-metrics:
-  - name: "my_metric"
-    help: "some help"
-    type: "gauge"
-    command: "echo 1"
-`,
-			wantErr:       true,
-			expectedError: "server.listen_address is required",
-		},
-		{
 			name: "metric without help",
 			yaml: `
-server:
-  listen_address: ":8080"
-  metrics_path: "/metrics"
 logging:
   level: "info"
 global:
@@ -165,25 +139,7 @@ metrics:
 			wantErr:       true,
 			expectedError: "dynamic_label name: 1_invalid_label is not valid",
 		},
-		{
-			name: "invalid metrics path",
-			yaml: `
-server:
-  listen_address: ":1234"
-  metrics_path: "metrics"
-logging:
-  level: "info"
-global:
-  timeout: "1s"
-metrics:
-  - name: "my_metric"
-    help: "help"
-    type: "gauge"
-    command: "echo 1"
-`,
-			wantErr:       true,
-			expectedError: "server.metrics_path must start with '/'",
-		},
+
 		{
 			name: "invalid logging level",
 			yaml: `

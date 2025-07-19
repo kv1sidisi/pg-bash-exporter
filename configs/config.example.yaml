@@ -1,16 +1,5 @@
 # ===================================================================
 # pg-bash-exporter: Example Configuration
-#
-# ===================================================================
-
-# -------------------------------------------------------------------
-# Section 1: Server and Global Settings
-# -------------------------------------------------------------------
-server:
-  # The address and port the server will listen on can be configured via
-  # LISTEN_ADDRESS and METRICS_PATH environment variables or .env file.
-  listen_address: "0.0.0.0:8080"
-  metrics_path: "/metrics"
 
 logging:
   # Logging level. Valid options: "debug", "info", "error".

@@ -21,10 +21,6 @@ var (
 func (c *Config) Validate() error {
 	var allErrors []error
 
-	if err := c.Server.validate(); err != nil {
-		allErrors = append(allErrors, err)
-	}
-
 	if err := c.Logging.validate(); err != nil {
 		allErrors = append(allErrors, err)
 	}
@@ -44,22 +40,6 @@ func (c *Config) Validate() error {
 	}
 
 	return errors.Join(allErrors...)
-}
-
-func (s *Server) validate() error {
-	var errs []error
-
-	if s.ListenAddress == "" {
-		errs = append(errs, errors.New("server.listen_address is required"))
-	}
-
-	if s.MetricsPath == "" {
-		errs = append(errs, errors.New("server.metrics_path is required"))
-	} else if s.MetricsPath[0] != '/' {
-		errs = append(errs, errors.New("server.metrics_path must start with '/'"))
-	}
-
-	return errors.Join(errs...)
 }
 
 func (l *Logging) validate() error {

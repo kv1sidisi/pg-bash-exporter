@@ -70,6 +70,12 @@ func (c *Collector) Describe(ch chan<- *prometheus.Desc) {
 	c.logger.Debug("metric description reading ended")
 }
 
+func (c *Collector) GetConfig() *config.Config {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.config
+}
+
 func (c *Collector) ReloadConfig() error {
 	var newCfg config.Config
 

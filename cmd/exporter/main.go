@@ -75,6 +75,16 @@ Environment variables:
 
 	slog.Info("Configuration loaded and logger initialized successfully")
 
+	listenAddress := os.Getenv("LISTEN_ADDRESS")
+	if listenAddress == "" {
+		listenAddress = ":5252"
+	}
+
+	metricsPath := os.Getenv("METRICS_PATH")
+	if metricsPath == "" {
+		metricsPath = "/metrics"
+	}
+
 	cache := cache.New()
 
 	exec := &executor.CommandExecutor{}
@@ -95,7 +105,7 @@ Environment variables:
 	registry.MustRegister(collector.ConcurrentCommands)
 
 	mux := http.NewServeMux()
-	mux.Handle(cfg.Server.MetricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 
 	mux.HandleFunc("/-/reload", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -119,19 +129,19 @@ Environment variables:
 <head><title>PG-Bash Exporter</title></head>
 <body>
 <h1>PG-Bash Exporter</h1>
-<p><a href='` + cfg.Server.MetricsPath + `'>Metrics</a></p>
+<p><a href='` + metricsPath + `'>Metrics</a></p>
 </body>
 </html>`))
 	})
 	server := &http.Server{
-		Addr:    cfg.Server.ListenAddress,
+		Addr:    listenAddress,
 		Handler: mux,
 	}
 
 	go func() {
 		slog.Info("Starting pg-bash-exporter server",
-			"listen_address", cfg.Server.ListenAddress,
-			"metrics_path", cfg.Server.MetricsPath,
+			"listen_address", listenAddress,
+			"metrics_path", metricsPath,
 		)
 
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
