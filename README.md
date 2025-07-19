@@ -48,16 +48,17 @@ PG-Bash Exporter — это конфигурируемый экспортер д
 
 1.  Перейдите на страницу "релизы" в репозитории проекта.
 2.  Найдите самый свежий релиз.
-3.  Скачайте архив, подходящий для вашей системы (например, `pg-bash-exporter-linux-amd64.tar.gz`).
-4.  Распакуйте архив:
+3.  Скачайте архив, подходящий для вашей системы (например, `pg-bash-exporter-linux-amd64.tar.gz`). 
+4. Если у вас windows то нужно скачать `pg-bash-exporter-linux-amd64.exe` и пропустить дальнейшие шаги 5,6,7 и перейти в [Быстрый старт](#быстрый-cтарт) для запуска.
+5. Распакуйте архив:
     ```sh
     tar -xvf pg-bash-exporter-linux-amd64.tar.gz
     ```
-5.  Сделайте файл исполняемым:
+6. Сделайте файл исполняемым:
     ```sh
     chmod +x pg-bash-exporter
     ```
-6.  (Опционально) Переместите файл в директорию, которая есть в вашем `PATH`, чтобы запускать его из любого места:
+7. (Опционально) Переместите файл в директорию, которая есть в вашем `PATH`, чтобы запускать его из любого места:
     ```sh
     sudo mv pg-bash-exporter /usr/local/bin/
     ```
@@ -125,12 +126,12 @@ PG-Bash Exporter — это конфигурируемый экспортер д
 
 1.  **Создайте файл конфигурации**
 
-    Скопируйте содержимое файла [`configs/config.windows.example.yaml`](./configs/config.windows.example.yaml) в новый файл `config.yaml`.
+    Скопируйте содержимое файла [`configs/config.windows.example.yaml`](./configs/config.windows.example.yaml) в новый файл `config.yaml` в той же папке где и `pg-bash-exporter-windows-amd64.exe`.
 
 2.  **Запустите экспортер**
 
     ```powershell
-    .\pg-bash-exporter.exe --config .\config.yaml
+    .\pg-bash-exporter-windows-amd64.exe --config .\config.yaml
     ```
 
 3.  **Проверьте метрики**
