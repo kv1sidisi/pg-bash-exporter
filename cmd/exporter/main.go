@@ -97,6 +97,23 @@ Environment variables:
 	mux := http.NewServeMux()
 	mux.Handle(cfg.Server.MetricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 
+	mux.HandleFunc("/-/reload", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			fmt.Fprintf(w, "This endpoint requires a POST request.\n")
+			return
+		}
+
+		if err := metricsCollector.ReloadConfig(); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, "Failed to reload config: %s\n", err)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "Config reloaded successfully.\n")
+	})
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
 <head><title>PG-Bash Exporter</title></head>
