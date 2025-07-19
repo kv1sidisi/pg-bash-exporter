@@ -74,6 +74,7 @@ func (c *Collector) ReloadConfig() error {
 	var newCfg config.Config
 
 	if err := config.Load(c.configPath, &newCfg); err != nil {
+		ConfigReloadErrors.Inc()
 		return err
 	}
 
@@ -84,6 +85,7 @@ func (c *Collector) ReloadConfig() error {
 
 	config.SetupLogger(newCfg.Logging)
 
+	ConfigReloads.Inc()
 	c.logger.Info("config reloaded successfully")
 	return nil
 }
@@ -117,8 +119,10 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 			defer wg.Done()
 
 			smph <- struct{}{}
+			ConcurrentCommands.Inc()
 			defer func() {
 				<-smph
+				ConcurrentCommands.Dec()
 			}()
 
 			if len(mc.PostfixMetrics) == 0 {

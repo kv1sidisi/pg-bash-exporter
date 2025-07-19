@@ -7,6 +7,7 @@ import (
 	"pg-bash-exporter/internal/config"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // getCommandOutput executes command from metric config.
@@ -38,7 +39,10 @@ func (c *Collector) getCommandOutput(metricConfig config.Metric) ([]string, erro
 		timeout = metricConfig.Timeout
 	}
 
+	start := time.Now()
 	out, err := c.executor.ExecuteCommand(context.Background(), metricConfig.Command, timeout)
+	duration := time.Since(start).Seconds()
+	CommandDuration.WithLabelValues(metricConfig.Name).Observe(duration)
 
 	c.cache.Set(cacheKey, out, err, ttl)
 

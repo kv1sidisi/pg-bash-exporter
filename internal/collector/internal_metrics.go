@@ -17,6 +17,18 @@ var (
 
 	// CacheMisses shows number of times cache was not used.
 	CacheMisses prometheus.Counter
+
+	// ConfigReloads shows number of successful config reloads.
+	ConfigReloads prometheus.Counter
+
+	// ConfigReloadErrors shows number of failed config reloads.
+	ConfigReloadErrors prometheus.Counter
+
+	// CommandDuration shows duration of each command execution.
+	CommandDuration *prometheus.HistogramVec
+
+	// ConcurrentCommands shows number of concurrently running commands.
+	ConcurrentCommands prometheus.Gauge
 )
 
 func init() {
@@ -43,5 +55,25 @@ func init() {
 	CacheMisses = prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "pg_bash_exporter_cache_misses_total",
 		Help: "Number of cache misses.",
+	})
+
+	ConfigReloads = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "pg_bash_exporter_config_reloads_total",
+		Help: "Number of successful config reloads.",
+	})
+
+	ConfigReloadErrors = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "pg_bash_exporter_config_reload_errors_total",
+		Help: "Number of failed config reloads.",
+	})
+
+	CommandDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Name: "pg_bash_exporter_command_duration_seconds",
+		Help: "Duration of each command execution.",
+	}, []string{"metric_name"})
+
+	ConcurrentCommands = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "pg_bash_exporter_concurrent_commands",
+		Help: "Number of concurrently running commands.",
 	})
 }

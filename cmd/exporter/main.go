@@ -68,6 +68,10 @@ func main() {
 	registry.MustRegister(collector.CommandErrors)
 	registry.MustRegister(collector.CacheHits)
 	registry.MustRegister(collector.CacheMisses)
+	registry.MustRegister(collector.ConfigReloads)
+	registry.MustRegister(collector.ConfigReloadErrors)
+	registry.MustRegister(collector.CommandDuration)
+	registry.MustRegister(collector.ConcurrentCommands)
 
 	mux := http.NewServeMux()
 	mux.Handle(cfg.Server.MetricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
