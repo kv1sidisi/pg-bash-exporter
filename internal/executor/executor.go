@@ -9,18 +9,19 @@ import (
 	"time"
 )
 
-type BashExecutor struct{}
+type CommandExecutor struct{}
 
-// ExecuteCommand executes shell command with timeout control.
-// returns command stout or stderr on failure.
-func (e *BashExecutor) ExecuteCommand(ctx context.Context, command string, timeout time.Duration) (string, error) {
+// ExecuteCommand executes a shell command with timeout control.
+// It takes the shell (e.g., "bash", "powershell"), the command to execute, and a timeout.
+// It returns the command's stdout or an error on failure.
+func (e *CommandExecutor) ExecuteCommand(ctx context.Context, shell, command string, timeout time.Duration) (string, error) {
 	if timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, timeout)
 		defer cancel()
 	}
 
-	cmd := exec.CommandContext(ctx, "bash", "-c", command)
+	cmd := exec.CommandContext(ctx, shell, "-c", command)
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

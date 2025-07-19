@@ -19,16 +19,37 @@ import (
 	"time"
 )
 
-var ValidationFlag bool
+var (
+	ValidationFlag bool
+	configPath     string
+)
 
 func init() {
 	flag.BoolVar(&ValidationFlag, "validate-config", false, "Validate the configuration file.")
+	flag.StringVar(&configPath, "config", "", "Path to the configuration file.")
 }
 
 func main() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, `Usage of pg-bash-exporter:
+
+pg-bash-exporter [flags]
+
+Flags:
+`)
+		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, `
+Environment variables:
+  CONFIG_PATH: Path to the configuration file. (e.g., "/etc/pg-bash-exporter/config.yaml")
+  LISTEN_ADDRESS: Server listen address. (e.g., "0.0.0.0:9876")
+  METRICS_PATH: Metrics path. (e.g., "/metrics")
+  BLACKLIST_FILE_PATH: Path to a YAML file with blacklisted commands.
+`)
+	}
+
 	flag.Parse()
 
-	configPath := config.GetPath()
+	configPath := config.GetPath(configPath)
 
 	if ValidationFlag {
 		var cfg config.Config
@@ -56,7 +77,7 @@ func main() {
 
 	cache := cache.New()
 
-	exec := &executor.BashExecutor{}
+	exec := &executor.CommandExecutor{}
 
 	metricsCollector := collector.NewCollector(&cfg, slog.Default(), exec, cache, configPath)
 

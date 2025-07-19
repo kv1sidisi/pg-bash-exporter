@@ -24,6 +24,7 @@ type Global struct {
 	CacheTTL         time.Duration `yaml:"cache_ttl,omitempty"`
 	MaxConcurrent    int           `yaml:"max_concurrent,omitempty"`
 	CommandBlacklist []string      `yaml:"command_blacklist,omitempty"`
+	Shell            string        `yaml:"shell,omitempty"`
 }
 
 type Metric struct {
@@ -38,6 +39,7 @@ type Metric struct {
 	IgnoreBlacklist bool              `yaml:"ignore_blacklist,omitempty"`
 	Field           int               `yaml:"field,omitempty"`
 	DynamicLabels   []DynamicLabel    `yaml:"dynamic_labels,omitempty"`
+	Shell           string            `yaml:"shell,omitempty"`
 }
 
 type PostfixMetric struct {

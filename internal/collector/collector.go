@@ -11,7 +11,7 @@ import (
 )
 
 type Executor interface {
-	ExecuteCommand(ctx context.Context, command string, timeout time.Duration) (string, error)
+	ExecuteCommand(ctx context.Context, shell, command string, timeout time.Duration) (string, error)
 }
 
 type Collector struct {

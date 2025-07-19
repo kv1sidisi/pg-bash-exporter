@@ -10,6 +10,7 @@ import (
 func TestExecuteCommand(t *testing.T) {
 	testCases := []struct {
 		name          string
+		shell         string
 		command       string
 		timeout       time.Duration
 		context       context.Context
@@ -20,6 +21,7 @@ func TestExecuteCommand(t *testing.T) {
 	}{
 		{
 			name:       "successful execution",
+			shell:      "bash",
 			command:    "echo 'hello world'",
 			timeout:    5 * time.Second,
 			context:    context.Background(),
@@ -28,6 +30,7 @@ func TestExecuteCommand(t *testing.T) {
 		},
 		{
 			name:        "command fails with stderr",
+			shell:       "bash",
 			command:     "echo 'error message' >&2; exit 1",
 			timeout:     5 * time.Second,
 			context:     context.Background(),
@@ -36,6 +39,7 @@ func TestExecuteCommand(t *testing.T) {
 		},
 		{
 			name:    "context deadline exceeded",
+			shell:   "bash",
 			command: "sleep 2",
 			timeout: 0,
 			context: func() context.Context {
@@ -48,6 +52,7 @@ func TestExecuteCommand(t *testing.T) {
 		},
 		{
 			name:        "internal timeout exceeded",
+			shell:       "bash",
 			command:     "sleep 1",
 			timeout:     50 * time.Millisecond,
 			context:     context.Background(),
@@ -65,8 +70,8 @@ func TestExecuteCommand(t *testing.T) {
 				defer cancel()
 			}
 
-			executor := &BashExecutor{}
-			gotOutput, err := executor.ExecuteCommand(ctx, tc.command, tc.timeout)
+			executor := &CommandExecutor{}
+			gotOutput, err := executor.ExecuteCommand(ctx, tc.shell, tc.command, tc.timeout)
 
 			if tc.wantErr {
 				if err == nil {

@@ -19,6 +19,9 @@ logging:
 #  path: "exporter.log"
 
 global:
+  # Default shell for all metrics. Can be overridden in each metric.
+  # Default is "bash".
+  # shell: "bash"
   # Default timeout for commands if not specified per-metric.
   timeout: "8s"
   # Default cache duration for command output if not specified per-metric.

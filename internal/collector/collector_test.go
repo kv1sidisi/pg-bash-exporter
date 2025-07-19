@@ -23,7 +23,7 @@ type mockExecutor struct {
 }
 
 // ExecuteCommand returns mock output and error.
-func (m *mockExecutor) ExecuteCommand(ctx context.Context, command string, timeout time.Duration) (string, error) {
+func (m *mockExecutor) ExecuteCommand(ctx context.Context, shell, command string, timeout time.Duration) (string, error) {
 	return m.output, m.err
 }
 

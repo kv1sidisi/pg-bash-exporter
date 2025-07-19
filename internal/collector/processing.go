@@ -39,8 +39,16 @@ func (c *Collector) getCommandOutput(metricConfig config.Metric) ([]string, erro
 		timeout = metricConfig.Timeout
 	}
 
+	shell := c.config.Global.Shell
+	if metricConfig.Shell != "" {
+		shell = metricConfig.Shell
+	}
+	if shell == "" {
+		shell = "bash"
+	}
+
 	start := time.Now()
-	out, err := c.executor.ExecuteCommand(context.Background(), metricConfig.Command, timeout)
+	out, err := c.executor.ExecuteCommand(context.Background(), shell, metricConfig.Command, timeout)
 	duration := time.Since(start).Seconds()
 	CommandDuration.WithLabelValues(metricConfig.Name).Observe(duration)
 
