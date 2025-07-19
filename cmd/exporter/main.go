@@ -29,6 +29,38 @@ func init() {
 	flag.StringVar(&configPath, "config", "", "Path to the configuration file.")
 }
 
+func newRouter(metricsCollector *collector.Collector, registry *prometheus.Registry, metricsPath string) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+
+	mux.HandleFunc("/reload", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+			return
+		}
+
+		if err := metricsCollector.ReloadConfig(); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, "Failed to reload config: %s\n", err)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "Config reloaded successfully.\n")
+	})
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`<html>
+<head><title>PG-Bash Exporter</title></head>
+<body>
+<h1>PG-Bash Exporter</h1>
+<p><a href='` + metricsPath + `'>Metrics</a></p>
+</body>
+</html>`))
+	})
+	return mux
+}
+
 func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, `Usage of pg-bash-exporter:
@@ -104,35 +136,8 @@ Environment variables:
 	registry.MustRegister(collector.CommandDuration)
 	registry.MustRegister(collector.ConcurrentCommands)
 
-	mux := http.NewServeMux()
-	mux.Handle(metricsPath, promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	mux := newRouter(metricsCollector, registry, metricsPath)
 
-	mux.HandleFunc("/-/reload", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			fmt.Fprintf(w, "This endpoint requires a POST request.\n")
-			return
-		}
-
-		if err := metricsCollector.ReloadConfig(); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "Failed to reload config: %s\n", err)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "Config reloaded successfully.\n")
-	})
-
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`<html>
-<head><title>PG-Bash Exporter</title></head>
-<body>
-<h1>PG-Bash Exporter</h1>
-<p><a href='` + metricsPath + `'>Metrics</a></p>
-</body>
-</html>`))
-	})
 	server := &http.Server{
 		Addr:    listenAddress,
 		Handler: mux,

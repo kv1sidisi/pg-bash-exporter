@@ -1,53 +1,79 @@
 {
-    "dashboard": {
-        "id": null,
-        "uid": null,
-        "title": "Bash Exporter Metrics",
-        "panels": [
-            {
-                "title": "System Load Average",
-                "type": "graph",
-                "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
-                "targets": [
-                    {"expr": "system_load_load_1m"},
-                    {"expr": "system_load_load_5m"},
-                    {"expr": "system_load_load_15m"}
-                ]
-            },
-            {
-                "title": "Process Count",
-                "type": "graph",
-                "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
-                "targets": [
-                    {"expr": "process_count"}
-                ]
-            },
-            {
-                "title": "Disk Usage (Used Bytes)",
-                "type": "graph",
-                "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
-                "targets": [
-                    {"expr": "disk_usage_used_bytes"}
-                ]
-            },
-            {
-                "title": "Exporter Command Errors",
-                "type": "graph",
-                "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
-                "targets": [
-                    {"expr": "rate(pg_bash_exporter_command_errors_total[5m])"}
-                ]
-            },
-            {
-                "title": "Exporter Cache Efficiency",
-                "type": "graph",
-                "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
-                "targets": [
-                    {"expr": "pg_bash_exporter_cache_hits_total", "legendFormat": "Cache Hits"},
-                    {"expr": "pg_bash_exporter_cache_misses_total", "legendFormat": "Cache Misses"}
-                ]
-            }
-        ]
-    },
-    "overwrite": true
+    "uid": "bash-exporter-dashboard",
+    "title": "Bash Exporter Metrics",
+    "tags": ["exporter", "bash"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "overwrite": true,
+    "panels": [
+        {
+            "title": "System Load Average",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+            "targets": [
+                {"expr": "system_load_load_1m"},
+                {"expr": "system_load_load_5m"},
+                {"expr": "system_load_load_15m"}
+            ]
+        },
+        {
+            "title": "Process Count",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+            "targets": [
+                {"expr": "process_count"}
+            ]
+        },
+        {
+            "title": "Disk Usage (Used Bytes)",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+            "targets": [
+                {"expr": "disk_usage_used_bytes"}
+            ]
+        },
+        {
+            "title": "Exporter Command Errors",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+            "targets": [
+                {"expr": "rate(pg_bash_exporter_command_errors_total[5m])"}
+            ]
+        },
+        {
+            "title": "Exporter Cache Efficiency",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+            "targets": [
+                {"expr": "pg_bash_exporter_cache_hits_total", "legendFormat": "Cache Hits"},
+                {"expr": "pg_bash_exporter_cache_misses_total", "legendFormat": "Cache Misses"}
+            ]
+        },
+        {
+            "title": "Config Reloads",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+            "targets": [
+                {"expr": "rate(pg_bash_exporter_config_reloads_total[5m])", "legendFormat": "Reloads"},
+                {"expr": "rate(pg_bash_exporter_config_reload_errors_total[5m])", "legendFormat": "Errors"}
+            ]
+        },
+        {
+            "title": "Concurrent Commands",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
+            "targets": [
+                {"expr": "pg_bash_exporter_concurrent_commands"}
+            ]
+        },
+        {
+            "title": "Command Duration (99th percentile)",
+            "type": "graph",
+            "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32},
+            "targets": [
+                {"expr": "histogram_quantile(0.99, sum(rate(pg_bash_exporter_command_duration_seconds_bucket[5m])) by (le, metric_name))", "legendFormat": "{{metric_name}}"}
+            ]
+        }
+    ]
 }

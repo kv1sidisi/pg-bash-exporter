@@ -94,10 +94,6 @@ PG-Bash Exporter — это конфигурируемый экспортер д
     Создайте файл `config.yaml` со следующим содержимым. Эта конфигурация собирает одну метрику — время работы системы.
 
     ```yaml
-    server:
-        listen_address: "0.0.0.0:9876"
-        metrics_path: "/metrics"
-        
     logging:
         level: "info"
     
@@ -117,7 +113,7 @@ PG-Bash Exporter — это конфигурируемый экспортер д
 3.  **Проверьте метрики**
 
     ```sh
-    curl http://localhost:9876/metrics
+    curl http://localhost:5252/metrics
     ```
 
 ### Быстрый старт (Windows)
@@ -148,7 +144,7 @@ PG-Bash Exporter — это конфигурируемый экспортер д
 
 1.  **Основной файл `config.yaml`**: Содержит описание метрик, глобальные настройки (таймауты, кеширование) и параметры логирования.
 2.  **Переменные окружения (или файл `.env`)**: Используются для настроек, специфичных для окружения. Переменные из `.env` имеют приоритет над системными.
-    *   `LISTEN_ADDRESS`: Адрес и порт для сервера (по умолчанию `:8080`).
+    *   `LISTEN_ADDRESS`: Адрес и порт для сервера (по умолчанию `:5252`).
     *   `METRICS_PATH`: Путь для метрик (по умолчанию `/metrics`).
     *   `BLACKLIST_FILE_PATH`: Путь к YAML-файлу с дополнительным списком запрещенных команд.
 
@@ -279,9 +275,13 @@ network_connections_by_state{state="LISTEN"} 10
 Экспортер поддерживает два способа перезагрузки конфигурации без перезапуска процесса:
 
 1.  **Через HTTP-эндпоинт (рекомендуемый, кросс-платформенный):**
-    Отправьте POST-запрос на эндпоинт `/-/reload`.
+    Отправьте GET-запрос на эндпоинт `/reload`.
     ```sh
-    curl -X POST http://localhost:9876/-/reload
+    curl http://localhost:5252/reload
+    ```
+    Для Windows (PowerShell):
+    ```powershell
+    Invoke-RestMethod -Uri http://localhost:5252/reload
     ```
     В ответ сервер вернет статус `200 OK` в случае успеха или `500 Internal Server Error` с описанием ошибки.
 
@@ -298,7 +298,7 @@ network_connections_by_state{state="LISTEN"} 10
 ```yaml
 - job_name: 'bash_exporter'
   static_configs:
-    - targets: ['localhost:9876'] # Укажите здесь адрес вашего экспортера
+    - targets: ['localhost:5252'] # Укажите здесь адрес вашего экспортера
 ```
 
 ### Запуск в Docker Compose
@@ -324,7 +324,7 @@ network_connections_by_state{state="LISTEN"} 10
 
 *   **Prometheus**: `http://localhost:9090`
 *   **Grafana**: `http://localhost:3000` (логин/пароль: `admin`/`admin`)
-*   **Экспортер**: `http://localhost:8080`
+*   **Экспортер**: `http://localhost:5252`
 
 В Grafana будет предварительно настроен источник данных Prometheus и дашборд `Bash Exporter Metrics`.
 
